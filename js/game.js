@@ -1063,13 +1063,11 @@
     G.camX = lerp(G.camX, aheadX, 1 - Math.pow(0.0009, dt));
     G.camY = lerp(G.camY, aheadY, 1 - Math.pow(0.0009, dt));
 
-    // 相机钳制在地图范围内，避免露出地图外的纯色区域
+    // 相机软钳制：只保证镜头不飞出地图太多，绝不把玩家挤出画面
     if (G.map) {
-      const halfW = (VW / ZOOM) / 2, halfH = (VH / ZOOM) / 2;
-      const minX = G.map.x + halfW, maxX = G.map.x + G.map.w - halfW;
-      const minY = G.map.y + halfH, maxY = G.map.y + G.map.h - halfH;
-      G.camX = (maxX > minX) ? Math.max(minX, Math.min(maxX, G.camX)) : G.map.x + G.map.w / 2;
-      G.camY = (maxY > minY) ? Math.max(minY, Math.min(maxY, G.camY)) : G.map.y + G.map.h / 2;
+      const inset = 140;
+      G.camX = Math.max(G.map.x + inset, Math.min(G.map.x + G.map.w - inset, G.camX));
+      G.camY = Math.max(G.map.y + inset, Math.min(G.map.y + G.map.h - inset, G.camY));
     }
 
     // 粒子
@@ -1168,7 +1166,7 @@
     // 地图外区域用主题底色填满，避免出现黑边
     if (G.map && G.map.theme) {
       const halfW = (VW / Z) / 2 + 40, halfH = (VH / Z) / 2 + 40;
-      ctx.fillStyle = G.map.theme.grass;
+      ctx.fillStyle = G.map.edgeColor || G.map.theme.grass;
       ctx.fillRect(G.camX - halfW, G.camY - halfH, halfW * 2, halfH * 2);
     }
 

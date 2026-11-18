@@ -116,7 +116,7 @@ const Terrain = (() => {
       if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
       if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
     }
-    const pad = 320;
+    const pad = 560;
     const x0 = Math.floor(minX - pad), y0 = Math.floor(minY - pad);
     const w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
 
@@ -835,6 +835,21 @@ const Terrain = (() => {
     g.fillStyle = light;
     g.fillRect(x0, y0, w, h);
 
+    // 取边缘平均色，供镜头出界时填底（消除接缝）
+    let edgeColor = T.grass;
+    try {
+      const sc = cv.getContext('2d');
+      const spots = [[2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3],
+                     [Math.floor(w / 2), 2], [Math.floor(w / 2), h - 3],
+                     [2, Math.floor(h / 2)], [w - 3, Math.floor(h / 2)]];
+      let er = 0, eg = 0, eb = 0, n = 0;
+      for (const sp of spots) {
+        const d = sc.getImageData(sp[0], sp[1], 1, 1).data;
+        er += d[0]; eg += d[1]; eb += d[2]; n++;
+      }
+      edgeColor = 'rgb(' + Math.round(er / n) + ',' + Math.round(eg / n) + ',' + Math.round(eb / n) + ')';
+    } catch (e) {}
+
     // 小地图缩略图（避免每帧缩放整张大图）
     const thumbSize = 256;
     const tScale = Math.min(thumbSize / w, thumbSize / h);
@@ -843,7 +858,7 @@ const Terrain = (() => {
     thumb.height = Math.max(1, Math.round(h * tScale));
     thumb.getContext('2d').drawImage(cv, 0, 0, thumb.width, thumb.height);
 
-    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T, thumb: thumb };
+    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T, thumb: thumb, edgeColor: edgeColor };
   }
 
   return { build, THEMES };
