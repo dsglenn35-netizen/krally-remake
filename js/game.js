@@ -48,7 +48,9 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr.length ? arr[(Math.random() * arr.length) | 0] : '';
 
-  const TALK = (CONTENT.dialogue || []).filter(s => s.length >= 12 && s.length <= 120);
+  // 过滤掉带 %d 之类占位符的原始文案（游戏内文案是格式化字符串）
+  const TALK = (CONTENT.dialogue || [])
+    .filter(s => s.length >= 12 && s.length <= 120 && s.indexOf('%') < 0 && s.indexOf('$') < 0);
   const UI = CONTENT.ui_labels || [];
 
   // ---------- 输入 ----------
@@ -384,6 +386,22 @@
   }
 
   function startRace(trackIdx, opts) {
+    const idx = trackIdx == null ? G.selectedTrack : trackIdx;
+    const def = TRACKS[idx] || {};
+    const cached = G.mapCache && def.name && G.mapCache[def.name];
+    if (opts && opts.defer && !cached && typeof Terrain !== 'undefined') {
+      // 先让加载提示绘制出来，再烘焙地图（烘焙是同步且较慢的）
+      const el = document.getElementById('loading');
+      if (el) el.classList.remove('hidden');
+      setTimeout(() => {
+        try { startRaceNow(trackIdx, opts); } finally { if (el) el.classList.add('hidden'); }
+      }, 60);
+      return;
+    }
+    startRaceNow(trackIdx, opts);
+  }
+
+  function startRaceNow(trackIdx, opts) {
     opts = opts || {};
     G.career = opts.career || null;
     G.collisions = 0;
@@ -955,14 +973,22 @@
     last = now;
     resizeCanvas();   // 每帧自愈：窗口/视口变化都能跟上
     fpsAcc += dt; fpsFrames++;
+
     if (fpsAcc >= 0.5) {
       fpsShown = Math.round(fpsFrames / fpsAcc);
       fpsAcc = 0; fpsFrames = 0;
       const el = document.getElementById('fps');
       if (el) el.textContent = fpsShown + ' FPS';
     }
-    update(dt);
-    render(now / 1000);
+    try {
+      update(dt);
+      render(now / 1000);
+    } catch (err) {
+      G._err = (err && err.stack) ? err.stack.split('\n').slice(0, 3).join(' | ') : String(err);
+      try { console.log('FRAME_ERR ' + G._err); } catch (e) {}
+      const ed = document.getElementById('fps');
+      if (ed) ed.textContent = 'ERR ' + String(err).slice(0, 60);
+    }
     requestAnimationFrame(frame);
   }
 
@@ -1036,6 +1062,15 @@
     const aheadY = p.y + Math.sin(p.angle) * Math.min(160, p.speed * 0.42);
     G.camX = lerp(G.camX, aheadX, 1 - Math.pow(0.0009, dt));
     G.camY = lerp(G.camY, aheadY, 1 - Math.pow(0.0009, dt));
+
+    // 相机钳制在地图范围内，避免露出地图外的纯色区域
+    if (G.map) {
+      const halfW = (VW / ZOOM) / 2, halfH = (VH / ZOOM) / 2;
+      const minX = G.map.x + halfW, maxX = G.map.x + G.map.w - halfW;
+      const minY = G.map.y + halfH, maxY = G.map.y + G.map.h - halfH;
+      G.camX = (maxX > minX) ? Math.max(minX, Math.min(maxX, G.camX)) : G.map.x + G.map.w / 2;
+      G.camY = (maxY > minY) ? Math.max(minY, Math.min(maxY, G.camY)) : G.map.y + G.map.h / 2;
+    }
 
     // 粒子
     for (let i = G.particles.length - 1; i >= 0; i--) {
@@ -1137,9 +1172,20 @@
       ctx.fillRect(G.camX - halfW, G.camY - halfH, halfW * 2, halfH * 2);
     }
 
-    // 预烘焙地图
+    // 预烘焙地图：只绘制可视区域（避免整张大图每帧上传 GPU）
     if (G.map) {
-      ctx.drawImage(G.map.canvas, G.map.x, G.map.y);
+      const halfW = (VW / Z) / 2, halfH = (VH / Z) / 2;
+      const left = Math.max(G.map.x, G.camX - halfW);
+      const top = Math.max(G.map.y, G.camY - halfH);
+      const right = Math.min(G.map.x + G.map.w, G.camX + halfW);
+      const bottom = Math.min(G.map.y + G.map.h, G.camY + halfH);
+      if (right > left && bottom > top) {
+        ctx.drawImage(
+          G.map.canvas,
+          left - G.map.x, top - G.map.y, right - left, bottom - top,
+          left, top, right - left, bottom - top
+        );
+      }
     }
 
     // 拾取物
@@ -1233,7 +1279,7 @@
       const dw = G.map.w * s2, dh = G.map.h * s2;
       const ox = bx + (size - dw) / 2;
       const oy = by + (size - dh) / 2;
-      ctx.drawImage(G.map.canvas, ox, oy, dw, dh);
+      ctx.drawImage(G.map.thumb || G.map.canvas, ox, oy, dw, dh);
 
       // 车手位置
       for (const c of G.cars) {
@@ -1342,7 +1388,7 @@
     const st = Meta.champState(champId);
     if (!st.started) Meta.startChamp(champId);
     const ev = Meta.nextEvent(champId);
-    startRace(ev.track, { career: { champId: champId }, laps: ev.laps, skill: ev.skill });
+    startRace(ev.track, { career: { champId: champId }, laps: ev.laps, skill: ev.skill, defer: true });
   }
 
   function statBar(label, v) {
@@ -1636,7 +1682,7 @@
     else showView('home');
   };
 
-  $('startBtn').onclick = () => { audioInit(); if (SND) SND.uiConfirm(); startRace(G.selectedTrack, {}); };
+  $('startBtn').onclick = () => { audioInit(); if (SND) SND.uiConfirm(); startRace(G.selectedTrack, { defer: true }); };
   $('resumeBtn').onclick = () => { if (SND) SND.uiClick(); togglePause(); };
   $('quitBtn').onclick = () => toMenu();
   $('menuBtn').onclick = () => toMenu();
@@ -1754,6 +1800,19 @@
   }
 
   requestAnimationFrame(frame);
+
+  if (location.search.includes('clickstart')) {
+    setTimeout(() => {
+      try {
+        const tm = /ctrack=(\d+)/.exec(location.search);
+        if (tm) G.selectedTrack = parseInt(tm[1], 10);
+        document.getElementById('startBtn').click();
+        document.title = 'CLICKED track=' + G.selectedTrack + ' state=' + G.state;
+      } catch (e) {
+        document.title = 'CLICKERR ' + e.message;
+      }
+    }, 600);
+  }
 
   if (location.search.includes('dbgstate')) {
     setTimeout(() => {

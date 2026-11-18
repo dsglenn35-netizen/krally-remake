@@ -1,6 +1,6 @@
 // art.js - 写实俯视车辆 + 特效（全部程序化绘制）
 const Art = (() => {
-  const SS = 4;                 // 精灵超采样倍数
+  const SS = 3;                 // 精灵超采样倍数
   let carShadowSprite = null;
   const spriteCache = new Map();
 

@@ -104,13 +104,19 @@ const Terrain = (() => {
   function build(track, themeIdx) {
     const T = THEMES[themeIdx % THEMES.length];
     const rnd = mulberry32(20240117 + themeIdx * 3157);
+    // 移动端把细节密度降到 ~45%，避免主线程长时间阻塞
+    const MOBILE = (typeof navigator !== 'undefined') &&
+      (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ||
+       (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches));
+    const K = MOBILE ? 0.45 : 1;
+    const N = (n) => Math.max(1, Math.round(n * K));
 
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     for (const p of track.points) {
       if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
       if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
     }
-    const pad = 820;
+    const pad = 320;
     const x0 = Math.floor(minX - pad), y0 = Math.floor(minY - pad);
     const w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
 
@@ -164,7 +170,7 @@ const Terrain = (() => {
       stamp(rnd() < 0.5 ? blobDark : blobLight, cx, cy, 240 + rnd() * 460, 0.12 + rnd() * 0.10);
     }
     // 中尺度斑驳（细节层次）
-    for (let i = 0; i < 1400; i++) {
+    for (let i = 0; i < N(1400); i++) {
       const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
       stamp(rnd() < 0.5 ? blobDark : blobLight, cx, cy, 14 + rnd() * 70, 0.10 + rnd() * 0.13);
     }
@@ -188,7 +194,7 @@ const Terrain = (() => {
       g.restore();
     }
     // 草簇（成片的明暗块，近看有层次）
-    for (let i = 0; i < 520; i++) {
+    for (let i = 0; i < N(520); i++) {
       const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
       stamp(rnd() < 0.6 ? blobLight : blobDark, cx, cy, 22 + rnd() * 55, 0.10 + rnd() * 0.12);
     }
@@ -196,7 +202,7 @@ const Terrain = (() => {
     // 草丛（方向、明度、长度都有变化）
     g.save();
     g.lineCap = 'round';
-    for (let i = 0; i < 9000; i++) {
+    for (let i = 0; i < N(9000); i++) {
       const x = x0 + rnd() * w, y = y0 + rnd() * h;
       const len = 1.6 + rnd() * 4.5;
       const tone = rnd();
@@ -212,14 +218,14 @@ const Terrain = (() => {
     }
     g.restore();
     // 碎石 / 土粒
-    for (let i = 0; i < 2400; i++) {
+    for (let i = 0; i < N(2400); i++) {
       const x = x0 + rnd() * w, y = y0 + rnd() * h;
       g.fillStyle = rnd() < 0.5 ? 'rgba(132,124,108,.30)' : 'rgba(58,56,48,.30)';
       const r = 0.6 + rnd() * 2.0;
       g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
     }
     // 极细噪点（近看有颗粒感）
-    for (let i = 0; i < 6000; i++) {
+    for (let i = 0; i < N(6000); i++) {
       const x = x0 + rnd() * w, y = y0 + rnd() * h;
       g.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
       g.fillRect(x, y, 1, 1);
@@ -392,7 +398,7 @@ const Terrain = (() => {
     g.restore();
 
     // ---- 路肩碎石 ----
-    for (let i = 0; i < 2600; i++) {
+    for (let i = 0; i < N(2600); i++) {
       const s = rnd() * track.length;
       const p = track.at(s);
       const side = rnd() < 0.5 ? -1 : 1;
@@ -661,7 +667,7 @@ const Terrain = (() => {
       return c;
     }
     const bushSprites = [makeBushSprite(11), makeBushSprite(23), makeBushSprite(37), makeBushSprite(51)];
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < N(300); i++) {
       const x = x0 + rnd() * w, y = y0 + rnd() * h;
       if (roadDist(x, y) < W / 2 + 30) continue;
       const sc = 0.55 + rnd() * 0.9;
@@ -670,7 +676,7 @@ const Terrain = (() => {
     }
 
     // 树 / 岩石
-    for (let i = 0; i < 340; i++) {
+    for (let i = 0; i < N(340); i++) {
       const x = x0 + rnd() * w, y = y0 + rnd() * h;
       if (roadDist(x, y) < W / 2 + 44) continue;
       const sc = 0.75 + rnd() * 0.85;
@@ -680,7 +686,7 @@ const Terrain = (() => {
       else blob(rockSprites[(rnd() * 2) | 0], x, y, sc * 0.8, 1);
     }
     // 木桶
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < N(200); i++) {
       const s = rnd() * track.length;
       const p = track.at(s);
       const side = rnd() < 0.5 ? -1 : 1;
@@ -829,7 +835,15 @@ const Terrain = (() => {
     g.fillStyle = light;
     g.fillRect(x0, y0, w, h);
 
-    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T };
+    // 小地图缩略图（避免每帧缩放整张大图）
+    const thumbSize = 256;
+    const tScale = Math.min(thumbSize / w, thumbSize / h);
+    const thumb = document.createElement('canvas');
+    thumb.width = Math.max(1, Math.round(w * tScale));
+    thumb.height = Math.max(1, Math.round(h * tScale));
+    thumb.getContext('2d').drawImage(cv, 0, 0, thumb.width, thumb.height);
+
+    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T, thumb: thumb };
   }
 
   return { build, THEMES };

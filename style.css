@@ -283,3 +283,8 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   padding:1px 6px; border-radius:4px; cursor:pointer; box-shadow:none; }
 .ed-check { display:flex; align-items:center; gap:6px; font-size:11px; color:#cfe4f5; }
 .ed-check input { width:auto; }
+.loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:60;
+  background:#05080d; color:#8fd8ff; font-size:14px; letter-spacing:3px; }
+.loading.hidden { display:none; }
+.loading span { animation:pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.45} 50%{opacity:1} }

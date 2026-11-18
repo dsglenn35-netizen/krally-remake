@@ -6,7 +6,9 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
+import android.util.Log;
 
 public class MainActivity extends Activity {
     private WebView web;
@@ -31,8 +33,17 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
 
-        web.setWebChromeClient(new WebChromeClient());
+        WebView.setWebContentsDebuggingEnabled(true);
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage cm) {
+                Log.i("KRALLY_JS", cm.messageLevel() + ": " + cm.message() + " @" + cm.lineNumber());
+                return true;
+            }
+        });
         web.setBackgroundColor(0xFF08090F);
+        // 设备 GPU 在绘制大尺寸 canvas 时会 SIGSEGV（Chrome_InProcGp），改用软件渲染保证稳定
+        web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         web.loadUrl("file:///android_asset/index.html");
         setContentView(web);
         hideSystemBars();
