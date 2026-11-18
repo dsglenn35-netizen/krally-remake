@@ -1,7 +1,7 @@
 // art.js - 拉力赛车俯视精灵 + 特效（全部程序化绘制）
 const Art = (() => {
   let SS = 3;
-  let CAR_SCALE = 1;            // 全局车辆缩放（调整视觉大小，不影响物理）
+  let CAR_SCALE = 0.65;         // 全局车辆缩放（默认 ×0.65，接近原作比例；不影响物理）
   let carShadowSprite = null;
   const spriteCache = new Map();
 
