@@ -1,6 +1,7 @@
 // art.js - 写实俯视车辆 + 特效（全部程序化绘制）
 const Art = (() => {
-  const SS = 3;                 // 精灵超采样倍数
+  let SS = 3;                   // 精灵超采样倍数
+  let SS_PENDING = 0;           // 高清渲染请求的倍率（下次取精灵时生效）
   let carShadowSprite = null;
   const spriteCache = new Map();
 
@@ -97,7 +98,7 @@ const Art = (() => {
         g.closePath();
         return;
       }
-      const nose = style.body === 'sport' ? 0.62 : 0.78;
+      const nose = style.body === 'sport' ? 0.52 : 0.70;
       g.moveTo(0, -L);
       g.bezierCurveTo(Wd * nose, -L * 0.86, Wd, -L * 0.42, Wd, 0);
       g.bezierCurveTo(Wd, L * 0.44, Wd * 0.84, L * 0.88, 0, L);
@@ -246,15 +247,30 @@ const Art = (() => {
       }
     }
 
-    // ---- 号码 ----
+    // ---- 号码（小圆牌，放在引擎盖上）----
     g.save();
-    g.fillStyle = 'rgba(255,255,255,.92)';
-    g.beginPath(); g.arc(0, -L * 0.6, 4.6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.9)';
+    g.beginPath(); g.arc(0, -L * 0.55, 3.4, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#14171c';
-    g.font = 'bold 5.6px "Arial Narrow", Arial, sans-serif';
+    g.font = 'bold 4.4px "Arial Narrow", Arial, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(String(style.num || 0), 0, -L * 0.6 + 0.3);
+    g.fillText(String(style.num || 0), 0, -L * 0.55 + 0.2);
     g.restore();
+
+    // ---- 门缝 / 机盖折线（提升「模型感」）----
+    g.strokeStyle = 'rgba(0,0,0,.30)';
+    g.lineWidth = 0.5;
+    g.beginPath();
+    g.moveTo(-Wd * 0.9, cy - L * 0.04); g.lineTo(-cw * 0.92, cy - L * 0.04);
+    g.moveTo(Wd * 0.9, cy - L * 0.04); g.lineTo(cw * 0.92, cy - L * 0.04);
+    g.stroke();
+    // 机盖两侧折线
+    g.strokeStyle = 'rgba(255,255,255,.10)';
+    g.lineWidth = 0.6;
+    g.beginPath();
+    g.moveTo(-Wd * 0.62, -L * 0.86); g.lineTo(-Wd * 0.5, -L * 0.36);
+    g.moveTo(Wd * 0.62, -L * 0.86); g.lineTo(Wd * 0.5, -L * 0.36);
+    g.stroke();
 
     // ---- 车灯 ----
     g.fillStyle = 'rgba(255,250,225,.95)';
@@ -322,6 +338,11 @@ const Art = (() => {
     roundRect(g, -cw, cabinTop, cw * 2, cabinBot - cabinTop, 4); g.fill();
 
     return cv;
+  }
+
+  function setSuperSample(n) {
+    n = Math.max(1, Math.min(8, Math.round(n)));
+    if (n !== SS) { SS = n; spriteCache.clear(); carShadowSprite = null; }
   }
 
   function getCarSprite(style) {
@@ -481,5 +502,5 @@ const Art = (() => {
     ctx.restore();
   }
 
-  return { car, pickup, mine, rocket, explosion, skid, roundRect, getCarSprite };
+  return { car, pickup, mine, rocket, explosion, skid, roundRect, getCarSprite, setSuperSample, get ss() { return SS; } };
 })();

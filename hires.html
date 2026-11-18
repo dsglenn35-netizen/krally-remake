@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>K-RALLY HD PREVIEW</title>
+<style>
+  body { margin:0; background:#05080d; font-family:"Segoe UI", sans-serif; }
+  canvas { display:block; }
+  #wrap { width:2400px; }
+  h2 { color:#9fe0ff; font-size:22px; letter-spacing:8px; margin:26px 0 10px 28px; font-weight:400; }
+</style></head>
+<body>
+<div id="wrap">
+  <h2>MAP / 地图特写</h2>
+  <canvas id="mapcv" width="2400" height="980"></canvas>
+  <h2>CARS / 车辆模型</h2>
+  <canvas id="carcv" width="2400" height="620"></canvas>
+</div>
+<script src="js/drivers.js"></script>
+<script src="js/art.js"></script>
+<script src="js/track.js"></script>
+<script src="js/terrain.js"></script>
+<script>
+(function () {
+  // ---------- 地图特写 ----------
+  const SCALE = 2.6, DET = 4;
+  const ti = parseInt((location.search.match(/t=(\d+)/) || [0, 0])[1], 10) || 0;
+  const track = new Track(TRACKS[ti].points, TRACKS[ti].width, TRACKS[ti].name);
+  const map = Terrain.build(track, ti, { scale: SCALE, detail: DET, preview: true });
+
+  const mc = document.getElementById('mapcv');
+  const g = mc.getContext('2d');
+  const W = mc.width, H = mc.height;
+
+  // 取赛道 32% 处作为镜头中心
+  const center = track.at(track.length * 0.32);
+  const viewW = W / 2.2, viewH = H / 2.2;          // 世界单位
+  const cx = center.x, cy = center.y;
+  const sx = (cx - viewW / 2 - map.x) * SCALE;
+  const sy = (cy - viewH / 2 - map.y) * SCALE;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(map.canvas, sx, sy, viewW * SCALE, viewH * SCALE, 0, 0, W, H);
+
+  // 车辆（世界坐标 → 画布坐标）
+  const toScreen = (wx, wy) => ({ x: (wx - (cx - viewW / 2)) * (W / viewW), y: (wy - (cy - viewH / 2)) * (H / viewH) });
+  const place = [
+    { s: 0.32, off: -26, driver: 0, ang: 0 },
+    { s: 0.325, off: 22, driver: 2, ang: 0.06 },
+    { s: 0.315, off: 30, driver: 1, ang: -0.05 },
+    { s: 0.30, off: -40, driver: 5, ang: 0.1 }
+  ];
+  Art.setSuperSample(8);
+  place.forEach(p => {
+    const pt = track.at(track.length * p.s);
+    const wx = pt.x + pt.nx * p.off;
+    const wy = pt.y + pt.ny * p.off;
+    const sc = toScreen(wx, wy);
+    const ang = Math.atan2(pt.ty, pt.tx) + p.ang;
+    Art.car(g, sc.x, sc.y, ang, DRIVERS[p.driver], { scale: 3.1, thrust: 0.25 });
+  });
+
+  // 暗角 + 颗粒
+  const vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 1.0);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.30)');
+  g.fillStyle = vg;
+  g.fillRect(0, 0, W, H);
+  // 暖色主光
+  const warm = g.createRadialGradient(W * 0.32, H * 0.25, 40, W * 0.32, H * 0.25, H * 0.95);
+  warm.addColorStop(0, 'rgba(255,214,150,.14)');
+  warm.addColorStop(1, 'rgba(255,190,120,0)');
+  g.fillStyle = warm;
+  g.fillRect(0, 0, W, H);
+
+  // ---------- 车辆模型 ----------
+  const cc = document.getElementById('carcv');
+  const cg = cc.getContext('2d');
+  cg.fillStyle = '#0a0f16';
+  cg.fillRect(0, 0, cc.width, cc.height);
+  // 背景网格光
+  const bgGrad = cg.createRadialGradient(cc.width / 2, cc.height / 2, 80, cc.width / 2, cc.height / 2, cc.width * 0.6);
+  bgGrad.addColorStop(0, 'rgba(40,80,120,.35)');
+  bgGrad.addColorStop(1, 'rgba(5,8,13,0)');
+  cg.fillStyle = bgGrad;
+  cg.fillRect(0, 0, cc.width, cc.height);
+
+  const picks = [0, 2, 3, 9];
+  picks.forEach((di, i) => {
+    const cellW = cc.width / picks.length;
+    const cx2 = cellW * (i + 0.5);
+    const cy2 = cc.height / 2 + 40;
+    // 展台光晕
+    const sp = cg.createRadialGradient(cx2, cy2, 10, cx2, cy2, 150);
+    sp.addColorStop(0, 'rgba(120,200,255,.20)');
+    sp.addColorStop(1, 'rgba(0,0,0,0)');
+    cg.fillStyle = sp;
+    cg.fillRect(cx2 - 160, cy2 - 160, 320, 320);
+
+    // 地面光斑
+    const floor = cg.createRadialGradient(cx2, cy2 + 120, 10, cx2, cy2 + 120, 190);
+    floor.addColorStop(0, 'rgba(90,150,200,.18)');
+    floor.addColorStop(1, 'rgba(0,0,0,0)');
+    cg.fillStyle = floor;
+    cg.fillRect(cx2 - 200, cy2 - 80, 400, 340);
+    // 倒影
+    cg.save();
+    cg.globalAlpha = 0.12;
+    cg.translate(cx2, cy2 + 210);
+    cg.scale(1, -0.55);
+    Art.car(cg, 0, 0, 0, DRIVERS[di], { scale: 5.6 });
+    cg.restore();
+    Art.car(cg, cx2, cy2, 0, DRIVERS[di], { scale: 5.6 });
+
+    cg.fillStyle = 'rgba(220,240,255,.92)';
+    cg.font = '600 26px "Segoe UI", sans-serif';
+    cg.textAlign = 'center';
+    cg.fillText(DRIVERS[di].name, cx2, 74);
+    cg.fillStyle = 'rgba(120,170,200,.7)';
+    cg.font = '16px "Segoe UI", sans-serif';
+    cg.fillText('#' + DRIVERS[di].num + ' · ' + DRIVERS[di].body.toUpperCase(), cx2, 100);
+  });
+  document.title = 'HD OK';
+})();
+</script></body></html>

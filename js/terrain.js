@@ -101,14 +101,18 @@ const Terrain = (() => {
     },
   ];
 
-  function build(track, themeIdx) {
+  // opts.scale: 高清渲染倍率（1 = 游戏内）；opts.detail: 细节密度倍率
+  function build(track, themeIdx, opts) {
+    opts = opts || {};
+    const S = Math.max(1, opts.scale || 1);
+    const DET = Math.max(1, opts.detail || 1);
     const T = THEMES[themeIdx % THEMES.length];
     const rnd = mulberry32(20240117 + themeIdx * 3157);
     // 移动端把细节密度降到 ~45%，避免主线程长时间阻塞
     const MOBILE = (typeof navigator !== 'undefined') &&
       (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ||
        (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches));
-    const K = MOBILE ? 0.45 : 1;
+    const K = (MOBILE ? 0.45 : 1) * DET;
     const N = (n) => Math.max(1, Math.round(n * K));
 
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -121,8 +125,9 @@ const Terrain = (() => {
     const w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
 
     const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
+    cv.width = Math.round(w * S); cv.height = Math.round(h * S);
     const g = cv.getContext('2d');
+    g.scale(S, S);
     g.translate(-x0, -y0);
 
     const W = track.width;
@@ -858,6 +863,17 @@ const Terrain = (() => {
     thumb.height = Math.max(1, Math.round(h * tScale));
     thumb.getContext('2d').drawImage(cv, 0, 0, thumb.width, thumb.height);
 
+    // 预览模式：保留整张大画布供裁切，不切瓦片
+    if (opts.preview) {
+      const ts0 = 256;
+      const s0 = Math.min(ts0 / w, ts0 / h);
+      const th0 = document.createElement('canvas');
+      th0.width = Math.max(1, Math.round(w * s0));
+      th0.height = Math.max(1, Math.round(h * s0));
+      th0.getContext('2d').drawImage(cv, 0, 0, th0.width, th0.height);
+      return { canvas: cv, tiles: [], x: x0, y: y0, w: w, h: h, theme: T, thumb: th0, edgeColor: edgeColor, scale: S };
+    }
+
     // 把整张地图切成 512 的瓦片，之后只按可视范围绘制；大画布可以释放
     const TILE = 512;
     const tiles = [];
@@ -866,8 +882,10 @@ const Terrain = (() => {
         const tw = Math.min(TILE, w - tx);
         const th = Math.min(TILE, h - ty);
         const tc = document.createElement('canvas');
-        tc.width = tw; tc.height = th;
-        tc.getContext('2d').drawImage(cv, tx, ty, tw, th, 0, 0, tw, th);
+        tc.width = Math.round(tw * S); tc.height = Math.round(th * S);
+        tc.getContext('2d').drawImage(
+          cv, Math.round(tx * S), Math.round(ty * S), Math.round(tw * S), Math.round(th * S),
+          0, 0, tc.width, tc.height);
         tiles.push({ x: x0 + tx, y: y0 + ty, w: tw, h: th, canvas: tc });
       }
     }
@@ -877,7 +895,7 @@ const Terrain = (() => {
 
     return {
       canvas: null, tiles: tiles, x: x0, y: y0, w: w, h: h,
-      theme: T, thumb: thumb, edgeColor: edgeColor,
+      theme: T, thumb: thumb, edgeColor: edgeColor, scale: S,
     };
   }
 
