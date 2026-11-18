@@ -1711,6 +1711,20 @@
     weaponBox.addEventListener('touchstart', (e) => { e.preventDefault(); audioInit(); playerFire(); }, { passive: false });
   }
 
+  function exitGame() {
+    if (SND) SND.uiClick();
+    try {
+      if (window.AndroidHost && window.AndroidHost.exitApp) { window.AndroidHost.exitApp(); return; }
+    } catch (e) {}
+    // 浏览器兜底
+    try { window.close(); } catch (e) {}
+    toast('网页版请直接关闭标签页');
+  }
+  const exitHome = document.getElementById('exitHome');
+  if (exitHome) exitHome.onclick = exitGame;
+  const exitBtn = document.getElementById('exitBtn');
+  if (exitBtn) exitBtn.onclick = exitGame;
+
   const pauseBtn = document.getElementById('pauseBtn');
   if (pauseBtn) pauseBtn.onclick = () => {
     if (SND) SND.uiClick();

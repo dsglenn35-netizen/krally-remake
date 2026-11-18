@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.JavascriptInterface;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.util.Log;
@@ -32,6 +33,17 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
+
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void exitApp() {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        finishAffinity();
+                    }
+                });
+            }
+        }, "AndroidHost");
 
         WebView.setWebContentsDebuggingEnabled(true);
         web.setWebChromeClient(new WebChromeClient() {

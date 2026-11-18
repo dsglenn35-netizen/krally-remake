@@ -306,3 +306,8 @@ html, body, #app, .overlay, #hud, #touch {
 .pause-actions button { min-width:150px; padding:14px 22px; font-size:15px; }
 .pause-actions button.danger { border-color:rgba(255,90,110,.65); color:#ff8fa0;
   background:rgba(60,16,26,.55); box-shadow:none; }
+/* 退出游戏入口 */
+.exit-link { margin-top:14px; background:transparent; border:1px solid rgba(255,90,110,.45);
+  color:#ff8fa0; font-size:12px; letter-spacing:2px; padding:7px 22px; border-radius:8px;
+  box-shadow:none; cursor:pointer; }
+.exit-link:hover { background:rgba(80,18,28,.5); }
