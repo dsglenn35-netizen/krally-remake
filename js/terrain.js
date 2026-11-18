@@ -257,10 +257,15 @@ const Terrain = (() => {
       };
       const mul = (c, k) => 'rgb(' + c.map(v => Math.max(0, Math.min(255, Math.round(v * k)))).join(',') + ')';
       const base = hex2rgb(T.rock);
-      const sideDark = mul(base, 0.52);
-      const sideMid = mul(base, 0.74);
-      const topC = mul(hex2rgb(T.rockLight), 0.96);
-      const topHi = mul(hex2rgb(T.rockLight), 1.14);
+      // 地面越亮（雪地/沙漠），岩体压得越暗，保证对比
+      const gLum = (hex2rgb(T.grass)[0] * 0.299 + hex2rgb(T.grass)[1] * 0.587 + hex2rgb(T.grass)[2] * 0.114) / 255;
+      const lit = Math.max(0, Math.min(1, (gLum - 0.45) / 0.35));   // 0..1 地面亮度系数
+      const darkK = 1 - lit * 0.52;                                  // 亮地面 → 岩体更暗
+      const baseD = base.map(v => v * darkK);
+      const sideDark = mul(baseD, 0.44);
+      const sideMid = mul(baseD, 0.66);
+      const topC = mul(hex2rgb(T.rockLight), 0.82 * darkK + 0.05);
+      const topHi = mul(hex2rgb(T.rockLight), 1.10);
 
       const distRoad = (x, y) => Math.abs(track.nearest(x, y).lateral);
 
@@ -299,17 +304,17 @@ const Terrain = (() => {
         g.shadowBlur = 34 * (R / 120);
         g.shadowOffsetX = R * 0.26;
         g.shadowOffsetY = R * 0.34;
-        g.fillStyle = 'rgba(0,0,0,.62)';
+        g.fillStyle = 'rgba(0,0,0,' + (0.55 + lit * 0.22).toFixed(2) + ')';
         pathAt(0, 0, 1);
         g.fill();
         g.restore();
 
         // 侧壁
         const grd = g.createLinearGradient(cx - R, cy - R * 0.8, cx + R * 0.9, cy + R);
-        grd.addColorStop(0, mul(base, 0.92));
+        grd.addColorStop(0, mul(baseD, 0.92));
         grd.addColorStop(0.35, sideMid);
         grd.addColorStop(0.7, sideDark);
-        grd.addColorStop(1, mul(base, 0.28));
+        grd.addColorStop(1, mul(baseD, 0.22));
         pathAt(0, 0, 1);
         g.fillStyle = grd;
         g.fill();
