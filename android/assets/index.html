@@ -4598,6 +4598,105 @@ const Meta = (() => {
   };
   $('driverBack').onclick = () => {
     if (SND) SND.uiClick();
+    if (G.driverReturn === 'career') { renderCareer(); showView('career'); }
+    else showView('home');
+  };
+
+  $('startBtn').onclick = () => { audioInit(); if (SND) SND.uiConfirm(); startRace(G.selectedTrack, {}); };
+  $('resumeBtn').onclick = () => { if (SND) SND.uiClick(); togglePause(); };
+  $('quitBtn').onclick = () => toMenu();
+  $('menuBtn').onclick = () => toMenu();
+
+  $('againBtn').onclick = () => {
+    if (SND) SND.uiConfirm();
+    $('result').classList.add('hidden');
+    if (G.resultAction === 'career') { toMenu(); renderCareer(); showView('career'); }
+    else if (G.resultAction === 'next') { startCareerRace(G.career.champId); }
+    else { startRace(G.selectedTrack, {}); }
+  };
+
+  function toMenu() {
+    G.state = 'menu';
+    G.career = null;
+    if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); SND.uiClick(); }
+    $('result').classList.add('hidden');
+    $('pause').classList.add('hidden');
+    $('hud').classList.add('hidden');
+    $('menu').classList.remove('hidden');
+    renderHome();
+    showView('home');
+  }
+
+  // ---------- 启动 ----------
+  resizeCanvas();
+
+  if (typeof I18N !== 'undefined') {
+    const lm = /lang=(zh|en)/.exec(location.search);
+    I18N.set(lm ? lm[1] : I18N.get());
+    const lb = document.getElementById('langBtn');
+    if (lb) lb.onclick = () => {
+      I18N.toggle();
+      refreshTopbar();
+      renderHome();
+      const vq = document.getElementById('view-quick');
+      const vc = document.getElementById('view-career');
+      if (vq && !vq.classList.contains('hidden')) buildQuickLists();
+      if (vc && !vc.classList.contains('hidden')) renderCareer();
+    };
+  }
+
+  Meta.load();
+  G.selectedDriver = Math.min(DRIVERS.length - 1, Math.max(0, Meta.driverIdx || 0));
+
+  refreshTopbar();
+  renderHome();
+  showView('home');
+  bindTouch();
+
+  (function () {
+    const vm = /view=(quick|career|garage|shop|drivers)/.exec(location.search);
+    if (!vm) return;
+    const v = vm[1];
+    if (v === 'quick') buildQuickLists();
+    if (v === 'drivers') renderDrivers();
+    if (v === 'career') renderCareer();
+    if (v === 'garage') renderGarage();
+    if (v === 'shop') renderShop();
+    showView(v);
+  })();
+
+  if (location.search.includes('autostart')) {
+    (function () {
+      const tm = /track=(\d+)/.exec(location.search);
+      startRace(tm ? parseInt(tm[1], 10) : 0, {});
+      G.countdown = 0.05; G.state = 'racing';
+      document.getElementById('banner').classList.add('hidden');
+      const m = /warmup=(\d+)/.exec(location.search);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        try {
+          for (let i = 0; i < n; i++) update(1 / 60);
+        } catch (err) {
+          window.__WARMUP_ERR = (err && err.stack) ? err.stack.split('\n').slice(0, 3).join(' | ') : String(err);
+        }
+        document.getElementById('banner').classList.add('hidden');
+        document.getElementById('taunt').classList.add('hidden');
+      }
+      if (location.search.includes('aistats')) {
+        document.title = 'AI ' + G.cars.map(function (c) {
+          return c.driver.name + ' v=' + Math.round(c.maxSpeed) + ' a=' + Math.round(c.accelStat) + ' arm=' + c.armor.toFixed(2);
+        }).join(' | ');
+      }
+      if (window.__MAPERR) {
+        const e2 = document.createElement('div');
+        e2.style.cssText = 'position:fixed;top:40%;left:0;right:0;background:#500;color:#fff;font:12px monospace;padding:8px;z-index:99999';
+        e2.textContent = 'MAPERR: ' + window.__MAPERR;
+        document.body.appendChild(e2);
+      }
+    })();
+  }
+})();
+
 </script>
 </body>
 </html>

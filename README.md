@@ -300,6 +300,32 @@ pickup = perk.pickup       // 抢道具箱的判定半径
 
 头像是程序化绘制的（`js/portrait.js`）：头盔壳体三段渐变 + 护目镜渐变与斜向反光 + 侧面车号 + 通风口 + 赛车服肩部与车队色条纹 + 背景斜纹与光晕，每人一套配色，96×96 超采样后缓存。没有复用原作任何素材。
 
+
+## 中文化补全（本轮）
+
+之前只汉化了按钮和提示，还剩下这些英文，现已全部处理：
+
+| 位置 | 原文 | 现在 |
+|---|---|---|
+| 赛道名 ×9 | NEON HARBOR / FROZEN PASS … | 霓虹港 / 冰封山口 / 午夜山脊 / 荒漠山脊 / 丛林赛道 / 七号码头 / 赤岩峡谷 / 秋日环道 / 盐滩 |
+| 锦标赛 ×3 | ROOKIE CUP / CHAMPIONSHIP / MASTER LEAGUE | 新人杯 / 冠军赛 / 大师联赛（含「需先完成 新人杯」） |
+| 升级项 ×3 | ENGINE / TIRES / WEAPONS | 引擎 / 轮胎 / 武器 |
+| 车型描述 | SPORT / MUSCLE / TRUCK … | 跑车 / 肌肉车 / 皮卡 / 轿车 / 小型车 / 旅行车 |
+| 顶栏 | LV · XP | 等级 · 经验 |
+| 车库标题 | STATS | 属性 |
+| 商店标签 | CARS / UPGRADES / DETAIL | 车辆 / 升级 / 详情 |
+| HUD | LAP / PAUSED | 圈 / 暂停 |
+| 触屏按钮 | BRAKE / GAS / FIRE | 刹车 / 油门 / 开火 |
+| 武器 | SPACE | 空格 |
+| 车手台词 | 英文原文 | 中文译文（`bioZh`），英文模式仍显示原文 |
+| 车手战绩 | 0W / 0R · $400 | 0胜 / 0场 · $400 |
+| 战术数值 | AGGR / BLOCK / LOOT | 攻击 / 封堵 / 抢道具 |
+| 副标题 | REMAKE · CAREER PROTOTYPE | 重制版 · 生涯原型 |
+
+保留英文的：车手本名（JURIJ/MARKO…）、赞助商名（品牌）、车款型号（KITE/VIPER/WRAITH/NOVA-X）——这些属于专有名词。
+
+实现方式：赛道/锦标赛/升级/车型在数据里加了 `zh` 字段，界面通过 `trackName()/champName()/upgName()/bodyName()` 取值；静态文案走 `data-i18n`。切到 EN 时全部回到英文。
+
 ## 音效
 
 全程序化合成（WebAudio），13 项实测均有真实输出：
