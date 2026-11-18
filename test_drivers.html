@@ -2,6 +2,7 @@
 <div id="out" style="font:13px monospace;color:#0f0;background:#000;padding:8px;white-space:pre"></div>
 <script src="js/drivers.js"></script>
 <script src="js/meta.js"></script>
+<script src="js/ghost.js"></script>
 <script>
 const log = [];
 let pass = 0, fail = 0;
@@ -68,6 +69,37 @@ ok(Meta.driverWins('KIDDO') === 1, 'driver win recorded');
 Meta.addDriverWin('KIDDO');
 ok(Meta.driverWins('KIDDO') === 2, 'driver win increments');
 ok(Meta.profileOf('JURIJ').champsWon === 0, 'other driver wins untouched');
+
+
+// 排位积分
+const p0 = Meta.profileOf(0);
+const rpStart = p0.rp;
+Meta.setDriver(0);
+Meta.addRP(25);
+ok(Meta.profileOf(0).rp === rpStart + 25, 'RP +25, got ' + Meta.profileOf(0).rp);
+Meta.addRP(-100);
+ok(Meta.profileOf(0).rp === rpStart - 75, 'RP -100, got ' + Meta.profileOf(0).rp);
+Meta.addRP(-99999);
+ok(Meta.profileOf(0).rp === 0, 'RP clamped at 0, got ' + Meta.profileOf(0).rp);
+Meta.profileOf(0).rp = rpStart;
+Meta.save();
+
+ok(Meta.tierOf(0).key === 'bronze', 'tier 0 = bronze');
+ok(Meta.tierOf(1099).key === 'bronze', 'tier 1099 = bronze');
+ok(Meta.tierOf(1100).key === 'silver', 'tier 1100 = silver');
+ok(Meta.tierOf(1300).key === 'gold', 'tier 1300 = gold');
+ok(Meta.tierOf(1500).key === 'platinum', 'tier 1500 = platinum');
+ok(Meta.tierOf(1700).key === 'diamond', 'tier 1700 = diamond');
+ok(Meta.tierOf(9999).key === 'diamond', 'tier 9999 = diamond');
+
+// 幽灵记录（隔离 key）
+if (typeof Ghost !== 'undefined') {
+  Ghost.save('__test_track', 12.34, [[1,2,0.5],[3,4,0.6],[5,6,0.7]]);
+  const gg = Ghost.load('__test_track');
+  ok(gg && Math.abs(gg.lap - 12.34) < 1e-6, 'ghost lap saved');
+  ok(gg.pts.length === 3, 'ghost points saved');
+  Ghost.clear('__test_track');  ok(Ghost.load('__test_track') === null, 'ghost cleared');
+}
 
 document.getElementById('out').textContent =
   'PASS ' + pass + ' / FAIL ' + fail + '\n' + log.join('\n');

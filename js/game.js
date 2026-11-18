@@ -27,6 +27,8 @@
   const champName = (ch) => (isZh() && ch && ch.zh) ? ch.zh : (ch ? ch.name : '');
   const upgName = (u) => (isZh() && u && u.zh) ? u.zh : (u ? u.name : '');
   const bodyName = (b) => T('body' + b.charAt(0).toUpperCase() + b.slice(1));
+  const tierName = (t) => (isZh() ? t.zh : t.en);
+  const RP_TABLE = [0, 25, 12, -8, -20];
   function audioInit() { if (SND) { SND.init(); } }
   const KEYS = {};
   const AUTOPLAY = location.search.includes('autoplay');
@@ -163,11 +165,36 @@
       this.dist += ds;
       if (this.dist < 0) this.dist = 0;
       const lapNow = Math.max(1, Math.floor(this.dist / L) + 1);
-      if (lapNow !== this.lap) {
+      // 幽灵车采样（仅玩家）
+    if (this.isPlayer && G.state === 'racing') {
+      G.recT = (G.recT || 0) + dt;
+      if (G.recT >= 0.05) {
+        G.recT = 0;
+        G.rec = G.rec || [];
+        G.rec.push({ t: G.raceTime, x: this.x, y: this.y, a: this.angle });
+        if (G.rec.length > 8000) G.rec.shift();
+      }
+    }
+
+    if (lapNow !== this.lap) {
         this.lap = lapNow;
         if (this.lap > 1) {
           const lapTime = G.raceTime - this.lapStart;
-          if (lapTime > 5 && (!this.bestLap || lapTime < this.bestLap)) this.bestLap = lapTime;
+          if (lapTime > 5 && (!this.bestLap || lapTime < this.bestLap)) {
+          this.bestLap = lapTime;
+          if (this.isPlayer && typeof Ghost !== 'undefined' && G.track) {
+            const from = G.raceTime - lapTime;
+            const pts = (G.rec || []).filter(s => s.t >= from)
+              .map(s => [Math.round(s.x), Math.round(s.y), Math.round(s.a * 100) / 100]);
+            if (pts.length > 20) {
+              Ghost.save(G.track.name, lapTime, pts);
+              G.ghost = { lap: lapTime, pts: pts, rate: 0.05 };
+              G.ghostNew = true;
+              const gl2 = document.getElementById('ghostLap');
+              if (gl2) gl2.textContent = '幽灵 ' + fmtTime(lapTime) + ' ★';
+            }
+          }
+        }
         }
         this.lapStart = G.raceTime;
         if (this.lap > G.laps && !this.finished) {
@@ -210,6 +237,38 @@
     const def = TRACKS[idx];
     return new Track(def.points, def.width, def.name);
   }
+
+  // ---------- 自定义赛道 ----------
+  function registerAllCustom() {
+    if (typeof Editor === 'undefined') return;
+    const list = Editor.loadAll();
+    list.forEach(t => {
+      const existing = TRACKS.findIndex(x => x.name === t.name && x.custom);
+      const def = { name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true };
+      if (existing >= 0) TRACKS[existing] = def; else TRACKS.push(def);
+    });
+  }
+
+  function registerCustom(def) {
+    const idx = TRACKS.findIndex(x => x.custom && x.name === def.name);
+    const full = { name: def.name, theme: def.theme, width: def.width, points: def.points, custom: true };
+    if (idx >= 0) { TRACKS[idx] = full; return idx; }
+    TRACKS.push(full);
+    return TRACKS.length - 1;
+  }
+
+  window.Game = {
+    startCustomTrack(def) {
+      const idx = registerCustom(def);
+      G.selectedTrack = idx;
+      startRace(idx, {});
+      G.driverReturn = null;
+      if (typeof showView === 'function') showView('home');
+      document.getElementById('menu').classList.add('hidden');
+    },
+    reloadTracks() { registerAllCustom(); },
+    openEditor() { showView('editor'); if (typeof Editor !== 'undefined') Editor.open(); },
+  };
 
   function spawnPickups(track) {
     const types = ['rocket', 'turbo', 'mine', 'rocket', 'turbo', 'mine', 'rocket', 'turbo'];
@@ -288,13 +347,30 @@
     G.laps = opts.laps || LAPS;
     G.posHist = [];
     G.posT = 0;
+    G.rec = [];
+    G.recT = 0;
+    G.ghostNew = false;
     const track = buildTrack(trackIdx == null ? G.selectedTrack : trackIdx);
     G.track = track;
+    G.ghost = (typeof Ghost !== 'undefined') ? Ghost.load(track.name) : null;
+    const gl = document.getElementById('ghostLap');
+    if (gl) gl.textContent = G.ghost ? ('幽灵 ' + fmtTime(G.ghost.lap)) : '';
+    if (location.search.includes('fakeghost')) {
+      const pts = [];
+      const step = 8;
+      for (let s = 0; s < track.length; s += step) {
+        const p = track.at(s);
+        pts.push([Math.round(p.x), Math.round(p.y), Math.round(p.angle * 100) / 100]);
+      }
+      G.ghost = { lap: (pts.length * 0.05), pts: pts, rate: 0.05 };
+    }
     G.mapCache = G.mapCache || {};
     const mapKey = track.name;
     if (!G.mapCache[mapKey] && typeof Terrain !== 'undefined') {
       try {
-        G.mapCache[mapKey] = Terrain.build(track, (trackIdx == null ? G.selectedTrack : trackIdx));
+        const defIdx = (trackIdx == null ? G.selectedTrack : trackIdx);
+        const defTheme = (TRACKS[defIdx] && TRACKS[defIdx].theme != null) ? TRACKS[defIdx].theme : defIdx;
+        G.mapCache[mapKey] = Terrain.build(track, defTheme);
       } catch (e) {
         G.mapCache[mapKey] = null;
         window.__MAPERR = (e && e.message) + ' | ' + ((e && e.stack) ? e.stack.split('\n')[1] : '');
@@ -443,6 +519,11 @@
       rewards = Meta.finishQuick(pos);
       G.resultAction = 'again';
     }
+    const rpDelta = RP_TABLE[Math.min(pos, 4)] || 0;
+    const rpNow = Meta.addRP(rpDelta);
+    G.rpDelta = rpDelta;
+    G.rpNow = rpNow;
+
     const drvPerk = (DRIVERS[G.selectedDriver] || {}).perk || {};
     rewards.cash = Math.round(rewards.cash * (drvPerk.prize || 1));
     rewards.xp = Math.round(rewards.xp * (drvPerk.xp || 1));
@@ -457,7 +538,11 @@
       T('total') + ' ' + fmtTime(p.finishTime) + '<br>' +
       T('bestLap') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--');
     const rw = document.getElementById('resultRewards');
+    const tier = Meta.tierOf(G.rpNow);
+    const rpText = (G.rpDelta >= 0 ? '+' : '') + G.rpDelta + ' RP';
     rw.innerHTML = '+$' + rewards.cash + ' &nbsp; +' + rewards.xp + ' ' + T('xp') +
+      ' &nbsp; <span style="color:' + (G.rpDelta >= 0 ? '#7ef0c0' : '#ff8fa0') + '">' + rpText + '</span>' +
+      ' <span style="color:' + tier.color + '">· ' + tierName(tier) + ' ' + G.rpNow + '</span>' +
       (champDone ? '<br><span style="color:#ffd479">' + T('champDone') + ' +$' + rewards.prize.cash + ' / +' + rewards.prize.xp + ' XP</span>' : '');
     drawPosChart();
     const oc = document.getElementById('oppCard');
@@ -1006,6 +1091,29 @@
       if (q.boom) Art.explosion(ctx, q.x, q.y, q.r * (1.6 - q.life / q.max), q.life / q.max);
     }
 
+    // 幽灵车（最佳圈回放）
+    if (G.ghost && G.player && (G.state === 'racing' || G.state === 'countdown')) {
+      const elapsed = Math.max(0, G.raceTime - (G.player.lapStart || 0));
+      const gi = Math.floor(elapsed / (G.ghost.rate || 0.05));
+      const gp = G.ghost.pts[gi];
+      if (gp) {
+        ctx.save();
+        ctx.globalAlpha = 0.42;
+        Art.car(ctx, gp[0], gp[1], gp[2],
+          { name: 'ghost', main: '#9fe8ff', dark: '#173743', light: '#e8fbff', body: 'sport', num: 0 },
+          { scale: 1.0 });
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = 'rgba(140,230,255,.55)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(gp[0], gp[1], 26, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // 车影 + 车
     const sorted = [...G.cars].sort((a, b) => a.y - b.y);
     for (const c of sorted) {
@@ -1104,7 +1212,7 @@
   }
 
   function showView(name) {
-    ['home', 'quick', 'career', 'garage', 'shop', 'drivers'].forEach(v => {
+    ['home', 'quick', 'career', 'garage', 'shop', 'drivers', 'editor'].forEach(v => {
       const el = $('view-' + v);
       if (el) el.classList.toggle('hidden', v !== name);
     });
@@ -1131,7 +1239,10 @@
       dv.innerHTML =
         '<div class="db-avatar" style="background:radial-gradient(circle at 35% 30%,' + d.light + ',' + d.main + ' 55%,' + d.dark + ')">' + d.num + '</div>' +
         '<div class="db-text"><b>' + d.name + '</b><span>赞助商 ' + (d.sponsor || '-') + ' · ' + (d.perkText || '') +
-        ' · 生涯胜场 ' + Meta.driverWins(d.name) + '</span></div>' +
+        ' · 生涯胜场 ' + Meta.driverWins(d.name) + '</span>' +
+        '<span style="color:' + Meta.tierOf(Meta.profileOf(G.selectedDriver).rp || 1000).color + '">' +
+        tierName(Meta.tierOf(Meta.profileOf(G.selectedDriver).rp || 1000)) + ' ' +
+        (Meta.profileOf(G.selectedDriver).rp || 1000) + ' RP</span></div>' +
         '<button class="db-change" id="changeDriver">换车手</button>';
       const cb = document.getElementById('changeDriver');
       if (cb) cb.onclick = () => {
@@ -1341,7 +1452,8 @@
       info.innerHTML =
         '<b>' + r.d.name + '</b>' +
         '<span>' + (r.d.sponsor || '-') + '</span>' +
-        '<em>★' + r.p.champsWon + ' · ' + r.p.wins + T('wins') + ' / ' + r.p.races + T('races') + ' · ' + DOLLAR + r.p.cash + '</em>';
+        '<em><span style="color:' + Meta.tierOf(r.p.rp || 1000).color + '">' + tierName(Meta.tierOf(r.p.rp || 1000)) + ' ' + (r.p.rp || 1000) + '</span>' +
+          ' · ★' + r.p.champsWon + ' · ' + r.p.wins + T('wins') + ' / ' + r.p.races + T('races') + '</em>';
 
       li.appendChild(rank);
       li.appendChild(pic);
@@ -1388,11 +1500,13 @@
     DRIVERS.forEach((d, i) => {
       const li = document.createElement('li');
       li.className = 'driver-card' + (i === G.selectedDriver ? ' active' : '');
+      const prf = Meta.profileOf(i);
+      const tinfo = Meta.tierOf(prf.rp || 1000);
       li.innerHTML =
         '<div class="dv-avatar" style="background:radial-gradient(circle at 35% 30%,' + d.light + ',' + d.main + ' 55%,' + d.dark + ')">' +
           '<span>' + d.num + '</span></div>' +
         '<div class="dv-name">' + d.name + '</div>' +
-        '<div class="dv-meta">$' + Meta.profileOf(i).cash + ' · ★' + Meta.driverWins(d.name) + '</div>' +
+        '<div class="dv-meta" style="color:' + tinfo.color + '">' + tierName(tinfo) + ' ' + (prf.rp || 1000) + ' · ★' + Meta.driverWins(d.name) + '</div>' +
         '<div class="dv-traits">' +
           '<i title="aggression" style="width:' + Math.round(d.traits.aggr * 100) + '%;background:#ff5c6e"></i>' +
         '</div>';
@@ -1425,6 +1539,23 @@
       ' / ' + T('loot') + ' ' + Math.round(d.traits.loot * 100) + ']</span>' +
       ' <span style="opacity:.5">· 生涯胜场 ' + Meta.driverWins(d.name) + '</span>';
   }
+
+  const navEditor = document.getElementById('navEditor');
+  if (navEditor) navEditor.onclick = () => {
+    if (SND) SND.uiClick();
+    showView('editor');
+    if (typeof Editor !== 'undefined') Editor.open();
+  };
+  const edBack = document.getElementById('edBack');
+  if (edBack) edBack.onclick = () => { if (SND) SND.uiClick(); showView('home'); renderHome(); };
+  const edSave = document.getElementById('edSave');
+  if (edSave) edSave.onclick = () => { if (SND) SND.uiClick(); Editor.save(); };
+  const edPlay = document.getElementById('edPlay');
+  if (edPlay) edPlay.onclick = () => { if (SND) SND.uiConfirm(); Editor.play(); };
+  const edClear = document.getElementById('edClear');
+  if (edClear) edClear.onclick = () => { if (SND) SND.uiClick(); Editor.clear(); };
+  const edUndo = document.getElementById('edUndo');
+  if (edUndo) edUndo.onclick = () => { if (SND) SND.uiClick(); Editor.undo(); };
 
   $('driverConfirm').onclick = () => {
     G.selectedDriver = driverSel;
@@ -1488,6 +1619,11 @@
 
   Meta.load();
   G.selectedDriver = Math.min(DRIVERS.length - 1, Math.max(0, Meta.driverIdx || 0));
+  if (typeof Editor !== 'undefined') {
+    Editor.loadAll().forEach(t => {
+      TRACKS.push({ name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true });
+    });
+  }
 
   refreshTopbar();
   renderHome();
@@ -1495,11 +1631,15 @@
   bindTouch();
 
   (function () {
-    const vm = /view=(quick|career|garage|shop|drivers)/.exec(location.search);
+    const vm = /view=(quick|career|garage|shop|drivers|editor)/.exec(location.search);
     if (!vm) return;
     const v = vm[1];
     if (v === 'quick') buildQuickLists();
     if (v === 'drivers') renderDrivers();
+    if (v === 'editor' && typeof Editor !== 'undefined') {
+      Editor.open();
+      if (location.search.includes('edplay')) Editor.play();
+    }
     if (v === 'career') renderCareer();
     if (v === 'garage') renderGarage();
     if (v === 'shop') renderShop();
@@ -1522,6 +1662,13 @@
         }
         document.getElementById('banner').classList.add('hidden');
         document.getElementById('taunt').classList.add('hidden');
+      }
+      if (location.search.includes('ghostinfo')) {
+        const pl = G.player || {};
+        document.title = 'DBG rec=' + ((G.rec || []).length) + ' spd=' + Math.round(pl.speed || 0) +
+          ' dist=' + Math.round(pl.dist || 0) + ' rt=' + (Math.round((G.raceTime || 0) * 10) / 10) + ' lap=' + pl.lap +
+          ' best=' + (pl.bestLap ? Math.round(pl.bestLap * 100) / 100 : 'null') +
+          ' ghost=' + (G.ghost ? (Math.round(G.ghost.lap * 100) / 100 + 's/' + G.ghost.pts.length) : 'none');
       }
       const oppm = /opp=(\d+)/.exec(location.search);
       if (oppm) { showOppCard(parseInt(oppm[1], 10)); }

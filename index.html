@@ -37,6 +37,10 @@
           <h3 data-i18n="garage">车库</h3>
           <p id="garageHint">查看与升级你的车</p>
         </div>
+        <div class="card" id="navEditor">
+          <h3>赛道编辑器</h3>
+          <p>自己画赛道，保存后可直接试跑</p>
+        </div>
         <div class="card" id="navShop">
           <h3 data-i18n="shop">商店</h3>
           <p data-i18n="shopDesc">买车 / 买升级</p>
@@ -55,6 +59,40 @@
       <div class="btnrow">
         <button id="driverConfirm" data-i18n="useDriver">选用该车手</button>
         <button class="ghost" id="driverBack" data-i18n="back">返回</button>
+      </div>
+    </div>
+
+    <!-- 赛道编辑器 -->
+    <div class="view hidden" id="view-editor">
+      <h2 class="vtitle">赛道编辑器</h2>
+      <div class="edwrap">
+        <canvas id="edCanvas" width="720" height="460"></canvas>
+        <div class="edpanel">
+          <label class="ed-row"><span>名称</span><input id="edName" value="自定义赛道"></label>
+          <label class="ed-row"><span>路宽</span><input id="edWidth" type="range" min="120" max="230" value="160"><b id="edWidthVal">160</b></label>
+          <label class="ed-row"><span>地貌</span>
+            <select id="edTheme">
+              <option value="0">夜间草地</option>
+              <option value="1">荒漠夜路</option>
+              <option value="2">雪原</option>
+              <option value="3">沙漠</option>
+              <option value="4">丛林</option>
+              <option value="5">码头</option>
+              <option value="6">红岩峡谷</option>
+              <option value="7">秋日林道</option>
+            </select>
+          </label>
+          <div class="edbtns">
+            <button id="edUndo" class="ghost">撤销</button>
+            <button id="edClear" class="ghost">清空</button>
+          </div>
+          <div class="edbtns">
+            <button id="edSave">保存</button>
+            <button id="edPlay">试跑</button>
+          </div>
+          <ul id="editorList" class="edlist"></ul>
+          <button class="ghost" id="edBack">返回</button>
+        </div>
       </div>
     </div>
 
@@ -132,6 +170,7 @@
       <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
       <div class="time" id="raceTime">0:00.00</div>
       <div class="best" id="bestLap">BEST --:--.--</div>
+      <div class="best" id="ghostLap" style="color:#8fd8ff"></div>
       <div class="best" id="fps" style="color:#4b6579">-- FPS</div>
     </div>
     <div class="hud-right">
@@ -190,6 +229,8 @@ window.addEventListener('error', function (e) {
 <script src="js/art.js"></script>
 <script src="js/drivers.js"></script>
 <script src="js/portrait.js"></script>
+<script src="js/ghost.js"></script>
+<script src="js/editor.js"></script>
 <script src="js/track.js"></script>
 <script src="js/terrain.js"></script>
 <script src="js/meta.js"></script>

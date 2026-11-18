@@ -46,6 +46,7 @@ const Meta = (() => {
       upgrades: { kite: { engine: 0, tires: 0, weapon: 0 } },
       champs: blankChamps(),
       bestLaps: {}, races: 0, wins: 0, champsWon: 0, unlocked: [],
+      rp: 1000, rpBest: 1000,
     };
   }
 
@@ -122,6 +123,27 @@ const Meta = (() => {
     return root.profiles[nm];
   }
   function driverWins(nm) { return profileOf(nm).champsWon; }
+
+  // ---------- 排位积分 ----------
+  const TIERS = [
+    { key: 'bronze',   min: 0,    zh: '青铜', en: 'BRONZE',   color: '#c98a4b' },
+    { key: 'silver',   min: 1100, zh: '白银', en: 'SILVER',   color: '#c7d2dc' },
+    { key: 'gold',     min: 1300, zh: '黄金', en: 'GOLD',     color: '#ffd479' },
+    { key: 'platinum', min: 1500, zh: '铂金', en: 'PLATINUM', color: '#8fe9ff' },
+    { key: 'diamond',  min: 1700, zh: '钻石', en: 'DIAMOND',  color: '#b9a7ff' },
+  ];
+  function tierOf(rp) {
+    let t = TIERS[0];
+    for (const x of TIERS) if (rp >= x.min) t = x;
+    return t;
+  }
+  function addRP(delta) {
+    const p = data;
+    p.rp = Math.max(0, (p.rp || 1000) + delta);
+    p.rpBest = Math.max(p.rpBest || 1000, p.rp);
+    save();
+    return p.rp;
+  }
   function addDriverWin(nm) { profileOf(nm).champsWon += 1; save(); }
 
   // ---------- 车辆 ----------
@@ -241,5 +263,6 @@ const Meta = (() => {
     canAfford, buyCar, buyUpgrade, upgradePrice, selectCar, upgOf,
     champState, champOf, startChamp, nextEvent, finishEvent, finishQuick, recordBestLap,
     setDriver, profileOf, driverWins, addDriverWin, nameOf,
+    TIERS, tierOf, addRP,
   };
 })();
