@@ -858,7 +858,27 @@ const Terrain = (() => {
     thumb.height = Math.max(1, Math.round(h * tScale));
     thumb.getContext('2d').drawImage(cv, 0, 0, thumb.width, thumb.height);
 
-    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T, thumb: thumb, edgeColor: edgeColor };
+    // 把整张地图切成 512 的瓦片，之后只按可视范围绘制；大画布可以释放
+    const TILE = 512;
+    const tiles = [];
+    for (let ty = 0; ty < h; ty += TILE) {
+      for (let tx = 0; tx < w; tx += TILE) {
+        const tw = Math.min(TILE, w - tx);
+        const th = Math.min(TILE, h - ty);
+        const tc = document.createElement('canvas');
+        tc.width = tw; tc.height = th;
+        tc.getContext('2d').drawImage(cv, tx, ty, tw, th, 0, 0, tw, th);
+        tiles.push({ x: x0 + tx, y: y0 + ty, w: tw, h: th, canvas: tc });
+      }
+    }
+
+    // 释放整张大画布，只保留瓦片与缩略图（显著降低内存峰值）
+    try { cv.width = 1; cv.height = 1; } catch (e) {}
+
+    return {
+      canvas: null, tiles: tiles, x: x0, y: y0, w: w, h: h,
+      theme: T, thumb: thumb, edgeColor: edgeColor,
+    };
   }
 
   return { build, THEMES };

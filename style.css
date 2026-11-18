@@ -288,3 +288,11 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .loading.hidden { display:none; }
 .loading span { animation:pulse 1.1s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:.45} 50%{opacity:1} }
+/* 移动端：禁止文字选择/长按菜单，保证触屏按键可靠 */
+html, body, #app, .overlay, #hud, #touch {
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+#touch button, #touch, #hud, .overlay, canvas { touch-action: none; }

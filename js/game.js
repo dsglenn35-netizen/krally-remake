@@ -54,6 +54,11 @@
   const UI = CONTENT.ui_labels || [];
 
   // ---------- 输入 ----------
+  // 移动端长按会触发系统菜单/文字选择，直接屏蔽
+  document.addEventListener('contextmenu', (e) => { e.preventDefault(); }, { passive: false });
+  document.addEventListener('selectstart', (e) => { e.preventDefault(); }, { passive: false });
+  document.addEventListener('gesturestart', (e) => { e.preventDefault(); }, { passive: false });
+
   addEventListener('keydown', (e) => {
     KEYS[e.code] = true;
     audioInit();
@@ -76,8 +81,14 @@
       el.addEventListener('touchstart', on, { passive: false });
       el.addEventListener('touchend', off, { passive: false });
       el.addEventListener('touchcancel', off, { passive: false });
+      el.addEventListener('pointerdown', (e) => { e.preventDefault(); touch[prop] = true; }, { passive: false });
+      el.addEventListener('pointerup', (e) => { e.preventDefault(); touch[prop] = false; }, { passive: false });
+      el.addEventListener('pointercancel', () => { touch[prop] = false; });
+      el.addEventListener('pointerleave', () => { touch[prop] = false; });
     };
-    ['tLeft','tRight','tGas','tBrake'].forEach(id => mk(id));
+    // 注意：必须传入 prop，否则 touch[undefined] 会被置位，触摸控制全部失效
+    [['tLeft', 'left'], ['tRight', 'right'], ['tGas', 'gas'], ['tBrake', 'brake']]
+      .forEach(pair => mk(pair[0], pair[1]));
     const fire = document.getElementById('tFire');
     if (fire) fire.addEventListener('touchstart', (e) => { e.preventDefault(); playerFire(); }, { passive: false });
   }
@@ -1052,7 +1063,8 @@
       let inp;
       if (c === p && !AUTOPLAY) inp = { steer, gas, brake };
       else inp = aiInput(c, dt);
-      if (G.state === 'countdown') inp = { steer: 0, gas: false, brake: true };
+      // 倒计时不要踩刹车（会把静止的车推向负速度，看起来像倒车）
+      if (G.state === 'countdown') inp = { steer: 0, gas: false, brake: false };
       c.update(dt, inp);
     }
     resolveCollisions(dt);
@@ -1170,19 +1182,16 @@
       ctx.fillRect(G.camX - halfW, G.camY - halfH, halfW * 2, halfH * 2);
     }
 
-    // 预烘焙地图：只绘制可视区域（避免整张大图每帧上传 GPU）
-    if (G.map) {
-      const halfW = (VW / Z) / 2, halfH = (VH / Z) / 2;
-      const left = Math.max(G.map.x, G.camX - halfW);
-      const top = Math.max(G.map.y, G.camY - halfH);
-      const right = Math.min(G.map.x + G.map.w, G.camX + halfW);
-      const bottom = Math.min(G.map.y + G.map.h, G.camY + halfH);
-      if (right > left && bottom > top) {
-        ctx.drawImage(
-          G.map.canvas,
-          left - G.map.x, top - G.map.y, right - left, bottom - top,
-          left, top, right - left, bottom - top
-        );
+    // 地图瓦片：只绘制与可视范围相交的块
+    if (G.map && G.map.tiles) {
+      const halfW = (VW / Z) / 2 + 40, halfH = (VH / Z) / 2 + 40;
+      const left = G.camX - halfW, right = G.camX + halfW;
+      const top = G.camY - halfH, bottom = G.camY + halfH;
+      const tiles = G.map.tiles;
+      for (let i = 0; i < tiles.length; i++) {
+        const t = tiles[i];
+        if (t.x > right || t.x + t.w < left || t.y > bottom || t.y + t.h < top) continue;
+        ctx.drawImage(t.canvas, t.x, t.y);
       }
     }
 
@@ -1277,7 +1286,7 @@
       const dw = G.map.w * s2, dh = G.map.h * s2;
       const ox = bx + (size - dw) / 2;
       const oy = by + (size - dh) / 2;
-      ctx.drawImage(G.map.thumb || G.map.canvas, ox, oy, dw, dh);
+      if (G.map.thumb) ctx.drawImage(G.map.thumb, ox, oy, dw, dh);
 
       // 车手位置
       for (const c of G.cars) {
