@@ -1,0 +1,13 @@
+# 构建中间产物
+android/build/
+
+# 打包时从根目录拷贝的副本（由 build_apk.ps1 生成）
+android/assets/
+
+# 构建输出（发布时作为附件，不进版本库）
+*.apk
+*.idsig
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
