@@ -1,6 +1,7 @@
 // art.js - 拉力赛车俯视精灵 + 特效（全部程序化绘制）
 const Art = (() => {
   let SS = 3;
+  let CAR_SCALE = 1;            // 全局车辆缩放（调整视觉大小，不影响物理）
   let carShadowSprite = null;
   const spriteCache = new Map();
 
@@ -356,8 +357,11 @@ const Art = (() => {
     return spriteCache.get(key);
   }
 
+  function setCarScale(v) { CAR_SCALE = Math.max(0.4, Math.min(1.6, v)); }
+  function getCarScale() { return CAR_SCALE; }
+
   function car(ctx, x, y, angle, style, o = {}) {
-    const scale = o.scale || 1;
+    const scale = (o.scale || 1) * CAR_SCALE;
     const sp = getCarSprite(style);
     const w = sp.width / SS * scale;
     const h = sp.height / SS * scale;
@@ -499,5 +503,5 @@ const Art = (() => {
     ctx.restore();
   }
 
-  return { car, pickup, mine, rocket, explosion, skid, roundRect, getCarSprite, setSuperSample, get ss() { return SS; } };
+  return { car, pickup, mine, rocket, explosion, skid, roundRect, getCarSprite, setSuperSample, setCarScale, getCarScale, get ss() { return SS; } };
 })();

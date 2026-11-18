@@ -396,6 +396,12 @@
     });
   }
 
+  // ?cscale=0.8 调整车辆视觉大小
+  (function () {
+    const m = /cscale=([\d.]+)/.exec(location.search);
+    if (m && Art.setCarScale) Art.setCarScale(parseFloat(m[1]));
+  })();
+
   function startRace(trackIdx, opts) {
     const idx = trackIdx == null ? G.selectedTrack : trackIdx;
     const def = TRACKS[idx] || {};

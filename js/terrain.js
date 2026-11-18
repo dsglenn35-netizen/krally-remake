@@ -249,6 +249,152 @@ const Terrain = (() => {
     }
     g.restore();
 
+    // ---------------- 岩体 / 悬崖（有体积，带投影）----------------
+    (function drawCliffs() {
+      const hex2rgb = (h) => {
+        const n = parseInt(h.replace('#', ''), 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      };
+      const mul = (c, k) => 'rgb(' + c.map(v => Math.max(0, Math.min(255, Math.round(v * k)))).join(',') + ')';
+      const base = hex2rgb(T.rock);
+      const sideDark = mul(base, 0.52);
+      const sideMid = mul(base, 0.74);
+      const topC = mul(hex2rgb(T.rockLight), 0.96);
+      const topHi = mul(hex2rgb(T.rockLight), 1.14);
+
+      const distRoad = (x, y) => Math.abs(track.nearest(x, y).lateral);
+
+      function drawCliff(cx, cy, R, rnd2) {
+        const n = 11 + ((rnd2() * 4) | 0);
+        let pts = [];
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2;
+          const rr = R * (0.86 + rnd2() * 0.30);
+          pts.push([cx + Math.cos(a) * rr * 1.16, cy + Math.sin(a) * rr * 0.88]);
+        }
+        // 两次平滑，得到"岩体"而不是"碎片"
+        for (let s = 0; s < 2; s++) {
+          const np = [];
+          for (let i = 0; i < pts.length; i++) {
+            const p0 = pts[(i - 1 + pts.length) % pts.length];
+            const p1 = pts[i];
+            const p2 = pts[(i + 1) % pts.length];
+            np.push([(p0[0] + p1[0] * 2 + p2[0]) / 4, (p0[1] + p1[1] * 2 + p2[1]) / 4]);
+          }
+          pts = np;
+        }
+        const pathAt = (dx, dy, s) => {
+          g.beginPath();
+          for (let i = 0; i < pts.length; i++) {
+            const x = cx + (pts[i][0] - cx) * s + dx;
+            const y = cy + (pts[i][1] - cy) * s + dy;
+            i ? g.lineTo(x, y) : g.moveTo(x, y);
+          }
+          g.closePath();
+        };
+
+        // 投影到地面
+        g.save();
+        g.shadowColor = 'rgba(0,0,0,.80)';
+        g.shadowBlur = 34 * (R / 120);
+        g.shadowOffsetX = R * 0.26;
+        g.shadowOffsetY = R * 0.34;
+        g.fillStyle = 'rgba(0,0,0,.62)';
+        pathAt(0, 0, 1);
+        g.fill();
+        g.restore();
+
+        // 侧壁
+        const grd = g.createLinearGradient(cx - R, cy - R * 0.8, cx + R * 0.9, cy + R);
+        grd.addColorStop(0, mul(base, 0.92));
+        grd.addColorStop(0.35, sideMid);
+        grd.addColorStop(0.7, sideDark);
+        grd.addColorStop(1, mul(base, 0.28));
+        pathAt(0, 0, 1);
+        g.fillStyle = grd;
+        g.fill();
+
+        // 顶面
+        const ox = -R * 0.06, oy = -R * 0.30, sc = 0.88;
+        pathAt(ox, oy, sc);
+        g.fillStyle = topC;
+        g.fill();
+
+        // 侧壁底缘暗线
+        pathAt(0, 0, 1);
+        g.strokeStyle = 'rgba(0,0,0,.45)';
+        g.lineWidth = 2.4;
+        g.stroke();
+
+        // 顶面纹理与棱线
+        g.save();
+        pathAt(ox, oy, sc);
+        g.clip();
+        for (let i = 0; i < N(140); i++) {
+          const ang = rnd2() * Math.PI * 2;
+          const rad = Math.sqrt(rnd2()) * R * 0.7;
+          const px = cx + ox + Math.cos(ang) * rad;
+          const py = cy + oy + Math.sin(ang) * rad * 0.9;
+          g.fillStyle = rnd2() < 0.5 ? 'rgba(0,0,0,.16)' : 'rgba(255,255,255,.12)';
+          const sz = 1 + rnd2() * 3.4;
+          g.fillRect(px, py, sz, sz * (0.5 + rnd2() * 0.8));
+        }
+        g.restore();
+
+        // 顶面落差边（暗）+ 受光边（亮）
+        pathAt(ox, oy, sc);
+        g.strokeStyle = 'rgba(0,0,0,.55)';
+        g.lineWidth = 3.0;
+        g.stroke();
+        g.save();
+        pathAt(ox + 1.2, oy + 1.2, sc);
+        g.strokeStyle = topHi;
+        g.globalAlpha = 0.38;
+        g.lineWidth = 1.6;
+        g.stroke();
+        g.restore();
+
+        // 侧面竖向纹理
+        g.save();
+        pathAt(0, 0, 1);
+        g.clip();
+        g.globalAlpha = 0.18;
+        for (let i = 0; i < N(60); i++) {
+          const ang = rnd2() * Math.PI * 2;
+          const rad = 0.4 + rnd2() * 0.8;
+          const px = cx + Math.cos(ang) * R * rad;
+          const py = cy + Math.sin(ang) * R * rad * 0.85;
+          g.strokeStyle = rnd2() < 0.5 ? '#000' : '#fff';
+          g.lineWidth = 1.2 + rnd2() * 2;
+          g.beginPath();
+          g.moveTo(px, py);
+          g.lineTo(px + (rnd2() - 0.5) * 9, py + 8 + rnd2() * 16);
+          g.stroke();
+        }
+        g.restore();
+      }
+
+      // 成组分布（少量大型岩群），避免满地"石饼"
+      const clusters = MOBILE ? 3 : 5;
+      for (let ci = 0; ci < clusters; ci++) {
+        let gx = 0, gy = 0, ok = false;
+        for (let t = 0; t < 120 && !ok; t++) {
+          gx = x0 + 260 + rnd() * (w - 520);
+          gy = y0 + 260 + rnd() * (h - 520);
+          if (distRoad(gx, gy) > 230) ok = true;
+        }
+        if (!ok) continue;
+        const n = 1 + ((rnd() * 3) | 0);
+        for (let k = 0; k < n; k++) {
+          const ax = gx + (rnd() - 0.5) * 260;
+          const ay = gy + (rnd() - 0.5) * 220;
+          if (distRoad(ax, ay) < 190) continue;
+          const R = 90 + rnd() * 170;
+          drawCliff(ax, ay, R, rnd);
+        }
+      }
+    })();
+
     // ---------------- 路面 ----------------
     function strokePath(width, color, dx, dy) {
       g.beginPath();

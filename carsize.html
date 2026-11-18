@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>CARSIZE</title>
+<style>body{margin:0;background:#070b11;font-family:"Segoe UI",sans-serif}canvas{display:block}</style></head>
+<body>
+<canvas id="cv" width="1500" height="900"></canvas>
+<script src="js/drivers.js"></script>
+<script src="js/art.js"></script>
+<script src="js/track.js"></script>
+<script src="js/terrain.js"></script>
+<script>
+(function(){
+  const track = new Track(TRACKS[2].points, TRACKS[2].width, TRACKS[2].name);
+  const map = Terrain.build(track, 2, { scale: 1.2, detail: 2, preview: true });
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+
+  const rows = [1.0, 0.8, 0.65];
+  const rowH = 290;
+  const center = track.at(track.length * 0.32);
+  const viewW = 1440, viewH = rowH + 20;
+
+  g.fillStyle = '#070b11'; g.fillRect(0, 0, cv.width, cv.height);
+  Art.setSuperSample(3);
+
+  rows.forEach((sc, i) => {
+    const y0 = 20 + i * (rowH + 20);
+    g.save();
+    g.beginPath(); g.rect(40, y0, viewW, rowH); g.clip();
+    const sx = (center.x - viewW / 2 - map.x) * 1.2;
+    const sy = (center.y - viewH / 2 - map.y) * 1.2;
+    g.drawImage(map.canvas, sx, sy, viewW * 1.2, viewH * 1.2, 40, y0, viewW, viewH);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(40, y0, viewW, rowH);
+    g.restore();
+
+    // 四辆车放在赛道上（世界坐标 → 行内坐标）
+    Art.setCarScale(sc);
+    const offs = [-30, -8, 14, 38];
+    for (let k = 0; k < 4; k++) {
+      const pt = track.at(track.length * (0.31 + k * 0.004));
+      const wx = pt.x + pt.nx * offs[k];
+      const wy = pt.y + pt.ny * offs[k];
+      const px = 40 + (wx - (center.x - viewW / 2));
+      const py = y0 + (wy - (center.y - viewH / 2));
+      Art.car(g, px, py, Math.atan2(pt.ty, pt.tx), DRIVERS[[0,2,3,5][k]], {});
+    }
+    Art.setCarScale(1);
+
+    g.fillStyle = 'rgba(150,215,255,.95)';
+    g.font = 'bold 26px "Segoe UI",sans-serif';
+    g.fillText('×' + sc.toFixed(2), 1200, y0 + 46);
+    g.strokeStyle = 'rgba(90,160,210,.35)'; g.lineWidth = 1;
+    g.strokeRect(40, y0, viewW, rowH);
+  });
+
+  g.fillStyle = 'rgba(190,220,245,.9)';
+  g.font = '22px "Segoe UI",sans-serif';
+  g.fillText('CAR SIZE COMPARISON  (same map scale)', 40, 892);
+  document.title = 'OK';
+})();
+</script></body></html>
