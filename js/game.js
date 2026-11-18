@@ -481,6 +481,8 @@
       G.cars.push(car);
     }
     G.player = G.cars[0];
+    const giveM = /give=(rocket|mine|turbo)/.exec(location.search);
+    if (giveM) { G.player.weapon = giveM[1]; G.player.ammo = giveM[1] === 'turbo' ? 1 : 3; updateWeaponHUD(); }
     G.pickups = spawnPickups(track);
     G.rockets = []; G.mines = []; G.particles = [];
     G.raceTime = 0; G.countdown = 3.6; G.tauntTimer = 0; G.bannerTimer = 0;
@@ -653,6 +655,13 @@
       p.ammo--;
       if (p.ammo <= 0) { p.weapon = null; }
       updateWeaponHUD();
+    } else if (p.weapon === 'mine' && p.ammo > 0) {
+      // 手机端没有 Shift，开火键对地雷等价于投放
+      G.mines.push({ x: p.x - Math.cos(p.angle) * 34, y: p.y - Math.sin(p.angle) * 34, life: 26, owner: p });
+      if (SND) SND.mineDrop();
+      p.ammo--;
+      if (p.ammo <= 0) p.weapon = null;
+      updateWeaponHUD();
     } else if (p.weapon === 'turbo') {
       p.boost = 1.6; p.weapon = null; p.ammo = 0; updateWeaponHUD();
       if (SND) { SND.rocket(); SND.pickup(); }
@@ -678,10 +687,10 @@
     const p = G.player;
     const name = document.getElementById('weaponName');
     const ammo = document.getElementById('weaponAmmo');
-    if (!p || !p.weapon) { name.textContent = '--'; ammo.textContent = ''; return; }
+    if (!p || !p.weapon) { name.textContent = '无武器'; ammo.textContent = '拾取路上的发光六边形'; return; }
     const label = p.weapon === 'rocket' ? T('rocket') : p.weapon === 'mine' ? T('mine') : T('turbo');
-    name.textContent = label;
-    ammo.textContent = p.weapon === 'turbo' ? T('spaceKey') : 'x' + p.ammo;
+    name.textContent = label + (p.weapon === 'turbo' ? '' : ' x' + p.ammo);
+    ammo.textContent = '点击使用';
   }
 
   // ---------- AI：循迹 + 避让 + 战术层（封堵 / 撞人 / 抢道具） ----------
@@ -938,7 +947,11 @@
           c.picked = (c.picked || 0) + 1;
           c.weapon = pk.type;
           c.ammo = pk.type === 'turbo' ? 1 : 3;
-          if (c.isPlayer) updateWeaponHUD();
+          if (c.isPlayer) {
+            updateWeaponHUD();
+            const wn = pk.type === 'rocket' ? T('rocket') : pk.type === 'mine' ? T('mine') : T('turbo');
+            toast('获得 ' + wn + (pk.type === 'turbo' ? ' · 点击开火加速' : pk.type === 'mine' ? ' · 点击开火布雷' : ' x' + c.ammo + ' · 点击开火发射'));
+          }
           break;
         }
       }
@@ -1690,6 +1703,14 @@
   };
 
   $('startBtn').onclick = () => { audioInit(); if (SND) SND.uiConfirm(); startRace(G.selectedTrack, { defer: true }); };
+  const weaponBox = document.getElementById('weaponBox');
+  if (weaponBox) {
+    weaponBox.style.pointerEvents = 'auto';
+    weaponBox.style.cursor = 'pointer';
+    weaponBox.addEventListener('pointerdown', (e) => { e.preventDefault(); audioInit(); playerFire(); });
+    weaponBox.addEventListener('touchstart', (e) => { e.preventDefault(); audioInit(); playerFire(); }, { passive: false });
+  }
+
   const pauseBtn = document.getElementById('pauseBtn');
   if (pauseBtn) pauseBtn.onclick = () => {
     if (SND) SND.uiClick();
@@ -1788,6 +1809,7 @@
         document.getElementById('banner').classList.add('hidden');
         document.getElementById('taunt').classList.add('hidden');
       }
+      if (location.search.includes('autofire')) { setTimeout(() => { playerFire(); }, 100); }
       if (location.search.includes('ghostinfo')) {
         const pl = G.player || {};
         document.title = 'DBG rec=' + ((G.rec || []).length) + ' spd=' + Math.round(pl.speed || 0) +

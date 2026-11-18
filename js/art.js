@@ -408,6 +408,32 @@ const Art = (() => {
     ctx.stroke();
     ctx.fillStyle = c[1] + '44';
     ctx.fill();
+    // 图标（不跟随六边形旋转）
+    ctx.rotate(-t * 1.2);
+    ctx.fillStyle = '#0a1420';
+    if (type === 'rocket') {
+      ctx.beginPath();
+      ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-1, 0); ctx.lineTo(-3, 4);
+      ctx.closePath(); ctx.fill();
+    } else if (type === 'mine') {
+      ctx.beginPath(); ctx.arc(0, 0, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#0a1420'; ctx.lineWidth = 1.4;
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * 3.6, Math.sin(a) * 3.6);
+        ctx.lineTo(Math.cos(a) * 6, Math.sin(a) * 6);
+        ctx.stroke();
+      }
+    } else {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0a1420';
+      for (let k = -1; k <= 1; k += 2) {
+        ctx.beginPath();
+        ctx.moveTo(k * 2 - 2, -4); ctx.lineTo(k * 2 + 2, 0); ctx.lineTo(k * 2 - 2, 4);
+        ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 

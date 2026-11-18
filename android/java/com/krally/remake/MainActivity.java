@@ -44,7 +44,8 @@ public class MainActivity extends Activity {
         web.setBackgroundColor(0xFF08090F);
         // 设备 GPU 在绘制大尺寸 canvas 时会 SIGSEGV（Chrome_InProcGp），改用软件渲染保证稳定
         web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        web.loadUrl("file:///android_asset/index.html");
+        String qa = getIntent() != null ? getIntent().getStringExtra("url") : null;
+        web.loadUrl(qa != null && qa.length() > 0 ? qa : "file:///android_asset/index.html");
         setContentView(web);
         hideSystemBars();
     }
