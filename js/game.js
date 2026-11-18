@@ -400,6 +400,9 @@
   (function () {
     const m = /cscale=([\d.]+)/.exec(location.search);
     if (m && Art.setCarScale) Art.setCarScale(parseFloat(m[1]));
+    // ?track=N 直接指定地图（调试/分享用）
+    const t = /track=(\d+)/.exec(location.search);
+    if (t) { G.selectedTrack = Math.max(0, Math.min(TRACKS.length - 1, parseInt(t[1], 10))); }
   })();
 
   function startRace(trackIdx, opts) {
