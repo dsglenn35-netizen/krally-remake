@@ -124,6 +124,9 @@
   <!-- 名次条 -->
   <div class="ladder hidden" id="ladder"></div>
 
+  <!-- 对手车况卡 -->
+  <div class="oppcard hidden" id="oppCard"></div>
+
   <div id="hud" class="hidden">
     <div class="hud-left">
       <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
@@ -149,6 +152,7 @@
 
   <div id="result" class="overlay hidden">
     <h1 id="resultTitle">FINISH</h1>
+    <canvas id="posChart" width="560" height="150"></canvas>
     <div class="stats" id="resultStats"></div>
     <div class="rewards" id="resultRewards"></div>
     <div class="btnrow">

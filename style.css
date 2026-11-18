@@ -243,3 +243,20 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .ld-track { display:block; height:3px; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden; }
 .ld-bar { display:block; height:100%; background:linear-gradient(90deg,#2ad0ff,#7ef0c0); }
 .ld-row.me .ld-bar { background:linear-gradient(90deg,#ffd479,#ff8fc4); }
+/* 结算名次曲线 */
+#posChart { display:block; margin:8px auto 2px; width:min(560px, 90vw); height:auto;
+  background:rgba(8,14,22,.6); border:1px solid rgba(70,110,150,.28); border-radius:10px; }
+#posChart.hidden { display:none; }
+
+/* 对手车况卡 */
+.oppcard { position:fixed; left:150px; top:50%; transform:translateY(-50%); width:190px; z-index:25;
+  background:rgba(10,18,28,.94); border:1px solid rgba(70,110,150,.45); border-radius:10px; padding:9px 10px; }
+.oppcard.hidden { display:none; }
+.oc-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.oc-top img { width:42px; height:42px; border-radius:7px; }
+.oc-top b { display:block; font-size:12px; letter-spacing:.6px; color:#e2eefb; }
+.oc-top span { font-size:9.5px; color:#7fa3bb; }
+.oc-row { display:flex; justify-content:space-between; font-size:10.5px; padding:2px 0; color:#9fb8cc; }
+.oc-row b { color:#cfe4f5; font-weight:600; }
+.oc-hp { height:4px; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden; margin-top:5px; }
+.oc-hp i { display:block; height:100%; background:linear-gradient(90deg,#7ef0c0,#ffd479); }

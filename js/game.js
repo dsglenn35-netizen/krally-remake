@@ -268,13 +268,16 @@
     }
     el.dataset.sig = sig;
     el.innerHTML = rows.map((c, i) =>
-      '<div class="ld-row' + (c.isPlayer ? ' me' : '') + '">' +
+      '<div class="ld-row' + (c.isPlayer ? ' me' : '') + '" data-car="' + G.cars.indexOf(c) + '">' +
         '<span class="ld-pos">' + (i + 1) + '</span>' +
         '<img class="ld-pic" src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
         '<span class="ld-info"><b>' + c.driver.name + '</b>' +
           '<span class="ld-track"><i class="ld-bar" data-i="' + i + '" style="width:' + pct(c) + '%"></i></span>' +
         '</span>' +
       '</div>').join('');
+    el.querySelectorAll('.ld-row').forEach(row => {
+      row.onclick = () => showOppCard(parseInt(row.dataset.car, 10));
+    });
   }
 
   function startRace(trackIdx, opts) {
@@ -283,6 +286,8 @@
     G.collisions = 0;
     G.tactics = { block: 0, ram: 0, loot: 0 };
     G.laps = opts.laps || LAPS;
+    G.posHist = [];
+    G.posT = 0;
     const track = buildTrack(trackIdx == null ? G.selectedTrack : trackIdx);
     G.track = track;
     G.mapCache = G.mapCache || {};
@@ -344,6 +349,82 @@
     renderLineup();
   }
 
+  // 结算：名次变化曲线
+  function drawPosChart() {
+    const cv = document.getElementById('posChart');
+    if (!cv) return;
+    const hist = G.posHist || [];
+    if (hist.length < 2) { cv.classList.add('hidden'); return; }
+    cv.classList.remove('hidden');
+    const g2 = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    g2.clearRect(0, 0, W, H);
+    const padL = 22, padR = 10, padT = 8, padB = 8;
+    const n = hist.length;
+    const px = (i) => padL + (W - padL - padR) * (i / (n - 1));
+    const py = (rank) => padT + (H - padT - padB) * ((rank - 1) / 3);
+
+    g2.strokeStyle = 'rgba(120,170,200,.16)';
+    g2.lineWidth = 1;
+    for (let r = 1; r <= 4; r++) {
+      g2.beginPath(); g2.moveTo(padL, py(r)); g2.lineTo(W - padR, py(r)); g2.stroke();
+    }
+
+    // 3 点中值平滑，压掉并排换位造成的锯齿
+    const rankAt = (idx) => hist.map(snap => snap.indexOf(idx) + 1);
+    const smooth = (arr) => arr.map((v, i) => {
+      const a = arr[Math.max(0, i - 1)], b = arr[i], c = arr[Math.min(arr.length - 1, i + 1)];
+      const s = [a, b, c].filter(x => x > 0).sort((x, y) => x - y);
+      return s.length ? s[Math.floor(s.length / 2)] : 0;
+    });
+
+    G.cars.forEach((c, idx) => {
+      const ranks = smooth(rankAt(idx));
+      g2.beginPath();
+      let started = false;
+      for (let i = 0; i < n; i++) {
+        const rank = ranks[i];
+        if (!rank) continue;
+        const x = px(i), y = py(rank);
+        if (!started) { g2.moveTo(x, y); started = true; } else g2.lineTo(x, y);
+      }
+      g2.strokeStyle = c.driver.main;
+      g2.lineWidth = c.isPlayer ? 2.8 : 1.4;
+      g2.globalAlpha = c.isPlayer ? 1 : 0.7;
+      g2.stroke();
+      g2.globalAlpha = 1;
+    });
+
+    g2.fillStyle = 'rgba(170,200,220,.75)';
+    g2.font = '10px "Segoe UI", sans-serif';
+    g2.fillText('1', 6, py(1) + 3);
+    g2.fillText('4', 6, py(4) + 3);
+  }
+
+  // 对手车况卡
+  function showOppCard(carIdx) {
+    const el = $('oppCard');
+    const c = G.cars[carIdx];
+    if (!c) return;
+    if (el.dataset.idx === String(carIdx) && !el.classList.contains('hidden')) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.dataset.idx = String(carIdx);
+    const hp = Math.max(0, Math.min(100, c.health));
+    const weapon = c.weapon ? (c.weapon === 'rocket' ? T('rocket') : c.weapon === 'mine' ? T('mine') : T('turbo')) : T('none');
+    el.innerHTML =
+      '<div class="oc-top">' +
+        '<img src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
+        '<div><b>' + c.driver.name + '</b><span>#' + c.driver.num + ' · ' + bodyName(c.driver.body) + '</span></div>' +
+      '</div>' +
+      '<div class="oc-row"><i>' + T('lap') + '</i><b>' + Math.max(1, Math.min(c.lap, G.laps)) + '/' + G.laps + '</b></div>' +
+      '<div class="oc-row"><i>' + T('speed') + '</i><b>' + Math.round(c.speed / 2.4) + ' km/h</b></div>' +
+      '<div class="oc-row"><i>' + T('weapon') + '</i><b>' + weapon + (c.ammo ? ' x' + c.ammo : '') + '</b></div>' +
+      '<div class="oc-hp"><i style="width:' + hp + '%"></i></div>';
+    el.classList.remove('hidden');
+  }
+
   function endRace() {
     G.state = 'finished';
     $('ladder').classList.add('hidden');
@@ -378,6 +459,9 @@
     const rw = document.getElementById('resultRewards');
     rw.innerHTML = '+$' + rewards.cash + ' &nbsp; +' + rewards.xp + ' ' + T('xp') +
       (champDone ? '<br><span style="color:#ffd479">' + T('champDone') + ' +$' + rewards.prize.cash + ' / +' + rewards.prize.xp + ' XP</span>' : '');
+    drawPosChart();
+    const oc = document.getElementById('oppCard');
+    if (oc) oc.classList.add('hidden');
     const btn = document.getElementById('againBtn');
     btn.textContent = champDone ? T('back') : (G.career ? T('next') : T('again'));
   }
@@ -861,6 +945,21 @@
       }
       // 超车台词
       if (Math.random() < dt * 0.06) showTaunt(pick(TALK));
+    }
+
+    if (G.state === 'racing') {
+      G.posT = (G.posT || 0) + dt;
+      if (G.posT >= 0.5) {
+        G.posT = 0;
+        const snap = [...G.cars].sort((a, b) => {
+          if (a.finished && b.finished) return a.finishTime - b.finishTime;
+          if (a.finished) return -1;
+          if (b.finished) return 1;
+          return b.progress - a.progress;
+        });
+        G.posHist.push(snap.map(c => G.cars.indexOf(c)));
+        if (G.posHist.length > 240) G.posHist.shift();
+      }
     }
 
     G.ladderT = (G.ladderT || 0) + dt;
@@ -1424,6 +1523,8 @@
         document.getElementById('banner').classList.add('hidden');
         document.getElementById('taunt').classList.add('hidden');
       }
+      const oppm = /opp=(\d+)/.exec(location.search);
+      if (oppm) { showOppCard(parseInt(oppm[1], 10)); }
       if (location.search.includes('aistats')) {
         document.title = 'AI ' + G.cars.map(function (c) {
           return c.driver.name + ' v=' + Math.round(c.maxSpeed) + ' a=' + Math.round(c.accelStat) + ' arm=' + c.armor.toFixed(2);
