@@ -231,7 +231,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .lu-hint { font-size:12px; color:#8fb6cf; letter-spacing:2px; }
 
 /* 名次条 */
-.ladder { position:fixed; left:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:5px; z-index:20; }
+.ladder { position:fixed; left:14px; top:58%; transform:translateY(-50%); display:flex; flex-direction:column; gap:5px; z-index:20; }
 .ld-row { display:grid; grid-template-columns:16px 30px 1fr; align-items:center; gap:7px;
   background:rgba(10,18,28,.72); border:1px solid rgba(70,110,150,.22); border-radius:7px; padding:3px 7px 3px 4px; }
 .ld-row.me { border-color:rgba(63,210,255,.7); background:rgba(16,40,58,.85); }
@@ -296,3 +296,13 @@ html, body, #app, .overlay, #hud, #touch {
   overscroll-behavior: none;
 }
 #touch button, #touch, #hud, .overlay, canvas { touch-action: none; }
+/* HUD 暂停按钮 */
+.pause-btn { position:absolute; right:18px; top:96px; pointer-events:auto; width:46px; height:46px;
+  border-radius:11px; background:rgba(10,18,28,.72); border:1px solid rgba(90,200,255,.45);
+  color:#9fe0ff; font-size:13px; letter-spacing:1px; box-shadow:none; cursor:pointer; }
+.pause-btn:active { background:rgba(30,70,105,.9); }
+/* 暂停面板按钮组 */
+.pause-actions { display:flex; gap:16px; align-items:center; }
+.pause-actions button { min-width:150px; padding:14px 22px; font-size:15px; }
+.pause-actions button.danger { border-color:rgba(255,90,110,.65); color:#ff8fa0;
+  background:rgba(60,16,26,.55); box-shadow:none; }

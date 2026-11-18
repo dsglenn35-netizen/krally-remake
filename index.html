@@ -182,6 +182,7 @@
       <div class="best" id="fps" style="color:#4b6579">-- FPS</div>
     </div>
     <div class="hud-right">
+      <button id="pauseBtn" class="pause-btn" aria-label="pause">❚❚</button>
       <div class="pos"><span id="posNum">4</span><small>/4</small></div>
       <div class="speed"><span id="spdNum">0</span><small>km/h</small></div>
     </div>
@@ -193,8 +194,10 @@
 
   <div id="pause" class="overlay hidden">
     <h1 data-i18n="pausedTitle">暂停</h1>
-    <button id="resumeBtn" data-i18n="resume">继续</button>
-    <button id="quitBtn" data-i18n="back">返回</button>
+    <div class="pause-actions">
+      <button id="resumeBtn" data-i18n="resume">继续</button>
+      <button id="quitBtn" class="danger" data-i18n="abort">终止比赛</button>
+    </div>
   </div>
 
   <div id="result" class="overlay hidden">

@@ -1690,6 +1690,11 @@
   };
 
   $('startBtn').onclick = () => { audioInit(); if (SND) SND.uiConfirm(); startRace(G.selectedTrack, { defer: true }); };
+  const pauseBtn = document.getElementById('pauseBtn');
+  if (pauseBtn) pauseBtn.onclick = () => {
+    if (SND) SND.uiClick();
+    if (G.state === 'racing' || G.state === 'paused') togglePause();
+  };
   $('resumeBtn').onclick = () => { if (SND) SND.uiClick(); togglePause(); };
   $('quitBtn').onclick = () => toMenu();
   $('menuBtn').onclick = () => toMenu();
