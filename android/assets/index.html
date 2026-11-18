@@ -1,0 +1,4603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=980">
+<title>K-RALLY 重制版</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="menu" class="overlay">
+    <div class="topbar">
+      <span class="cash" id="uiCash">$ 0</span>
+      <span class="lvl" id="uiLevel">LV 1 · 0 XP</span>
+      <span class="rec" id="uiRecord">0W / 0R</span>
+      <button id="langBtn" class="langbtn">中 / EN</button>
+    </div>
+
+    <!-- 首页 -->
+    <div class="view" id="view-home">
+      <div class="title">
+        <h1>K<span>-</span>RALLY</h1>
+        <p class="sub" data-i18n="subtitle">重制版 · 生涯原型</p>
+      </div>
+      <div class="cards">
+        <div class="card" id="navCareer">
+          <h3 data-i18n="career">生涯</h3>
+          <p id="careerHint">从 ROOKIE CUP 开始</p>
+        </div>
+        <div class="card" id="navQuick">
+          <h3 data-i18n="quick">快速比赛</h3>
+          <p data-i18n="quickDesc">随便跑一场，拿少量奖金</p>
+        </div>
+        <div class="card" id="navGarage">
+          <h3 data-i18n="garage">车库</h3>
+          <p id="garageHint">查看与升级你的车</p>
+        </div>
+        <div class="card" id="navShop">
+          <h3 data-i18n="shop">商店</h3>
+          <p data-i18n="shopDesc">买车 / 买升级</p>
+        </div>
+      </div>
+      <div class="currentcar" id="currentCarInfo"></div>
+    </div>
+
+    <!-- 车手选择（原作风格：头像 + 排名） -->
+    <div class="view hidden" id="view-drivers">
+      <h2 class="vtitle" data-i18n="driversTitle">车手选择</h2>
+      <div class="drvwrap">
+        <div class="drvroster"><ul id="driverRoster"></ul></div>
+        <div class="drvdetail" id="driverDetail"></div>
+      </div>
+      <div class="btnrow">
+        <button id="driverConfirm" data-i18n="useDriver">选用该车手</button>
+        <button class="ghost" id="driverBack" data-i18n="back">返回</button>
+      </div>
+    </div>
+
+    <!-- 快速赛 -->
+    <div class="view hidden" id="view-quick">
+      <h2 class="vtitle" data-i18n="quick">快速比赛</h2>
+      <div class="row">
+        <div class="panel">
+          <h2 data-i18n="driver">车手</h2>
+          <ul id="driverList"></ul>
+        </div>
+        <div class="panel">
+          <h2 data-i18n="track">赛道</h2>
+          <ul id="trackList"></ul>
+        </div>
+      </div>
+      <div class="bio" id="driverBio"></div>
+      <div class="btnrow">
+        <button id="startBtn" data-i18n="startRace">开始比赛</button>
+        <button class="ghost" id="backQuick" data-i18n="back">返回</button>
+      </div>
+    </div>
+
+    <!-- 生涯 -->
+    <div class="view hidden" id="view-career">
+      <h2 class="vtitle" data-i18n="career">生涯</h2>
+      <div class="driverbar" id="careerDriver"></div>
+      <div class="champs" id="champList"></div>
+      <div class="btnrow"><button class="ghost" id="backCareer" data-i18n="back">返回</button></div>
+    </div>
+
+    <!-- 车库 -->
+    <div class="view hidden" id="view-garage">
+      <h2 class="vtitle" data-i18n="garage">车库</h2>
+      <div class="row wide">
+        <div class="panel"><h2>你的车</h2><ul id="garageList"></ul></div>
+        <div class="panel grow"><h2 id="garageCarName" data-i18n="statsTitle">属性</h2><div id="garageStats"></div></div>
+      </div>
+      <div class="btnrow"><button class="ghost" id="backGarage" data-i18n="back">返回</button></div>
+    </div>
+
+    <!-- 商店 -->
+    <div class="view hidden" id="view-shop">
+      <h2 class="vtitle" data-i18n="shop">商店</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="cars" data-i18n="tabCars">车辆</button>
+        <button class="tab" data-tab="upg" data-i18n="tabUpg">升级</button>
+      </div>
+      <div class="row wide">
+        <div class="panel grow"><ul id="shopList"></ul></div>
+        <div class="panel"><h2 data-i18n="detailTitle">详情</h2><div id="shopDetail" class="detail">选择一件商品</div></div>
+      </div>
+      <div class="btnrow"><button class="ghost" id="backShop" data-i18n="back">返回</button></div>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+    <p class="hint" data-i18n="hint">WASD / 方向键 驾驶 · 空格 开火 · Shift 弃武器 · P 暂停 · M 静音</p>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
+      <div class="time" id="raceTime">0:00.00</div>
+      <div class="best" id="bestLap">BEST --:--.--</div>
+      <div class="best" id="fps" style="color:#4b6579">-- FPS</div>
+    </div>
+    <div class="hud-right">
+      <div class="pos"><span id="posNum">4</span><small>/4</small></div>
+      <div class="speed"><span id="spdNum">0</span><small>km/h</small></div>
+    </div>
+    <div class="weapon" id="weaponBox"><span id="weaponName">--</span><small id="weaponAmmo"></small></div>
+    <div class="healthbar"><i id="healthFill"></i></div>
+    <div id="taunt" class="taunt hidden"></div>
+    <div id="banner" class="banner hidden"></div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <h1 data-i18n="pausedTitle">暂停</h1>
+    <button id="resumeBtn" data-i18n="resume">继续</button>
+    <button id="quitBtn" data-i18n="back">返回</button>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <h1 id="resultTitle">FINISH</h1>
+    <div class="stats" id="resultStats"></div>
+    <div class="rewards" id="resultRewards"></div>
+    <div class="btnrow">
+      <button id="againBtn">继续</button>
+      <button class="ghost" id="menuBtn" data-i18n="menu">主菜单</button>
+    </div>
+  </div>
+
+  <div id="touch" class="touch hidden">
+    <div class="pad">
+      <button id="tLeft">&#9664;</button>
+      <button id="tRight">&#9654;</button>
+    </div>
+    <div class="pad">
+      <button id="tBrake" data-i18n="btnBrake">刹车</button>
+      <button id="tGas" data-i18n="btnGas">油门</button>
+      <button id="tFire" data-i18n="btnFire">开火</button>
+    </div>
+  </div>
+
+<script>
+window.addEventListener('error', function (e) {
+  var d = document.getElementById('errbox');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'errbox';
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#500;color:#fff;font:13px monospace;padding:8px;z-index:9999;white-space:pre-wrap';
+    document.body.appendChild(d);
+  }
+  d.textContent += (e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || 0) + '\n';
+}, true);
+</script>
+<script>
+// i18n.js - 多语言（zh / en）
+const I18N = (() => {
+  const DICT = {
+    zh: {
+      driversTitle: '车手选择', useDriver: '选用该车手', rank: '排名', record: '战绩',
+      career: '生涯', quick: '快速比赛', garage: '车库', shop: '商店',
+      careerDesc: '从新手杯开始的三档锦标赛',
+      quickDesc: '随便跑一场，拿少量奖金',
+      garageDesc: '查看与升级你的车',
+      shopDesc: '买车 / 买升级',
+      current: '当前', speed: '速度', accel: '加速', grip: '抓地',
+      back: '返回', start: '开始', cont: '继续', again: '再战', next: '下一场',
+      progress: '进度', lockedBy: '需先完成', done: '已完成', replay: '再战',
+      cars: '车辆', upgrades: '升级', buy: '购买', owned: '已拥有', max: '满级',
+      buyCar: '买车', detail: '详情', chooseItem: '选择一件商品',
+      yourCars: '你的车', stats: '属性', upgradeHint: '到商店购买升级。',
+      startRace: '开始比赛', driver: '车手', track: '赛道',
+      lap: '圈', best: '最佳', winner: '冠军!', finish: '完赛',
+      total: '总时间', bestLap: '最佳单圈', resume: '继续', quit: '退出',
+      menu: '主菜单', paused: '暂停', ready: '准备', go: '出发!',
+      cash: '现金', level: '等级', record: '战绩', wins: '胜', races: '场',
+      prize: '奖金', xp: '经验', champDone: '锦标赛完成',
+      rocket: '火箭', mine: '地雷', turbo: '涡轮', none: '--',
+      hint: 'WASD / 方向键 驾驶 · 空格 开火 · Shift 弃武器 · P 暂停 · M 静音',
+      spaceKey: '空格', aggr: '攻击', block: '封堵', loot: '抢道具', lapLabel: '圈', pausedTitle: '暂停', statsTitle: '属性', tabCars: '车辆', tabUpg: '升级',
+      detailTitle: '详情', btnBrake: '刹车', btnGas: '油门', btnFire: '开火',
+      subtitle: '重制版 · 生涯原型', turboShout: '涡轮加速!', boostShout: '加速!',
+      bodySport: '跑车', bodyMuscle: '肌肉车', bodySedan: '轿车', bodyCompact: '小型车',
+      bodyTruck: '皮卡', bodyWagon: '旅行车',
+    },
+    en: {
+      driversTitle: 'DRIVERS', useDriver: 'SELECT DRIVER', rank: 'RANK', record: 'RECORD',
+      career: 'CAREER', quick: 'QUICK RACE', garage: 'GARAGE', shop: 'SHOP',
+      careerDesc: 'Three championships, start with Rookie Cup',
+      quickDesc: 'A single race, small payout',
+      garageDesc: 'Inspect and tune your car',
+      shopDesc: 'Cars and upgrades',
+      current: 'CURRENT', speed: 'SPEED', accel: 'ACCEL', grip: 'GRIP',
+      back: 'BACK', start: 'START', cont: 'CONTINUE', again: 'RACE AGAIN', next: 'NEXT RACE',
+      progress: 'Progress', lockedBy: 'Clear', done: 'Completed', replay: 'Again',
+      cars: 'CARS', upgrades: 'UPGRADES', buy: 'BUY', owned: 'OWNED', max: 'MAX',
+      buyCar: 'Cars', detail: 'DETAIL', chooseItem: 'Pick an item',
+      yourCars: 'YOUR CARS', stats: 'STATS', upgradeHint: 'Buy upgrades in the shop.',
+      startRace: 'START RACE', driver: 'DRIVER', track: 'TRACK',
+      lap: 'LAP', best: 'BEST', winner: 'WINNER!', finish: 'FINISH',
+      total: 'TOTAL', bestLap: 'BEST LAP', resume: 'RESUME', quit: 'QUIT',
+      menu: 'MAIN MENU', paused: 'PAUSED', ready: 'READY', go: 'GO!',
+      cash: 'CASH', level: 'LV', record: 'RECORD', wins: 'W', races: 'R',
+      prize: 'prize', xp: 'XP', champDone: 'CHAMPIONSHIP COMPLETE',
+      rocket: 'ROCKET', mine: 'MINE', turbo: 'TURBO', none: '--',
+      hint: 'WASD / Arrows drive · SPACE fire · SHIFT drop · P pause · M mute',
+      spaceKey: 'SPACE', aggr: 'AGGR', block: 'BLOCK', loot: 'LOOT', lapLabel: 'LAP', pausedTitle: 'PAUSED', statsTitle: 'STATS', tabCars: 'CARS', tabUpg: 'UPGRADES',
+      detailTitle: 'DETAIL', btnBrake: 'BRAKE', btnGas: 'GAS', btnFire: 'FIRE',
+      subtitle: 'REMAKE · CAREER PROTOTYPE', turboShout: 'TURBO!', boostShout: 'BOOST!',
+      bodySport: 'SPORT', bodyMuscle: 'MUSCLE', bodySedan: 'SEDAN', bodyCompact: 'COMPACT',
+      bodyTruck: 'TRUCK', bodyWagon: 'WAGON',
+    },
+  };
+
+  let lang = (typeof localStorage !== 'undefined' && localStorage.getItem('krally_lang')) || 'zh';
+
+  function t(k) {
+    const d = DICT[lang] || DICT.zh;
+    return (k in d) ? d[k] : (DICT.en[k] !== undefined ? DICT.en[k] : k);
+  }
+  function set(l) {
+    lang = (l === 'en') ? 'en' : 'zh';
+    try { localStorage.setItem('krally_lang', lang); } catch (e) {}
+    document.documentElement.lang = (lang === 'en' ? 'en' : 'zh-CN');
+    applyStatic();
+  }
+  function applyStatic() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      el.placeholder = t(el.getAttribute('data-i18n-ph'));
+    });
+  }
+  const get = () => lang;
+  const toggle = () => { set(lang === 'zh' ? 'en' : 'zh'); return lang; };
+
+  return { t, set, get, toggle, applyStatic, DICT };
+})();
+</script>
+<script>
+window.GAME_CONTENT = {
+ "source": "KRally.sisx / data.pak (runtime memory dump)",
+ "ui_labels": [
+  "JURIJ",
+  "MARKO",
+  "--- GADANIE SPONSOR",
+  "THE END2",
+  "THE END3",
+  "#PS3WRONG WAY!",
+  "#PS2NEW LAP RECORD!",
+  "[ FINISH ]",
+  "#PS1CAR DAMAGED!",
+  "ARE YOU SURE?",
+  "SPONSOR",
+  "BETS",
+  "DR.DRILL",
+  "RUSTY",
+  "KIDDO",
+  "THE VIKING",
+  "EGGHEAD",
+  "FIXER",
+  "T.SHARQUE",
+  "SWEETHART",
+  "BOBBY D.",
+  "THUGS",
+  "VULTAR",
+  "GUILY",
+  "RESUME",
+  "MUSIC VOLUME <> #EM",
+  "SOUND VOLUME <> #EF",
+  "EXIT RACE",
+  "EASY",
+  "MEDIUM",
+  "HARD",
+  "REPAIR 5%",
+  "#PS4TURBO",
+  "ROCKET +1",
+  "ACCEPT",
+  "CANCEL",
+  "BACK",
+  "UNDEFINED",
+  "CENTER",
+  "MENU LEFT",
+  "MENU RIGHT",
+  "HARD1",
+  "HARD2",
+  "HARD3",
+  "HARD4",
+  "SPACE",
+  "HOME",
+  "ANSWER",
+  "HANGUP",
+  "CAMERA",
+  "INTERNET",
+  "FUNCTION",
+  "SLEFT",
+  "SRIGHT",
+  "JOG UP",
+  "JOG DOWN",
+  "JOG CENTER",
+  "YELLOW",
+  "JOG BACKWARD",
+  "JOG FORWARD",
+  "       DIFFICULTY LEVEL }",
+  "{YOUR BEST LAP #LT}",
+  "{ YOUR RACE TIME #RT }",
+  "  LAP RECORD #BL }",
+  "{ LAP RECORD #BL }",
+  "  TRACK RECORD #BR }",
+  "{ TRACK RECORD #BR }",
+  "LUDZIKI KILLED #PK",
+  "PRICE #YP",
+  "IOPSW",
+  "VSMIGGHMSUV",
+  "UNJKMPU",
+  "--- LOCKED",
+  "{ DEVELOPED BY }",
+  "{ SOUNDS }",
+  "{ GAME TYPE }",
+  "{SIMPLE}",
+  "{ADVANCE}",
+  "SOLD!",
+  " CHANGE SKINS IN QUICK MODE UNLOCKED!",
+  "--- ENTER CODE",
+  "CODE ACCEPTED",
+  "CODE REJECTED",
+  "#PS2SOLD!"
+ ],
+ "dialogue": [
+  "Driving like this can have really bad effect on your health.",
+  "Just as I expected!",
+  "No surprises there!",
+  "Do you have insurance?",
+  "Good luck! You'll need it!",
+  "This Russian ex-spy has nothing left in his life to pump up his adrenalin besides racing.This is the only thing he lives for. The only thing.",
+  "Godd race. We should repeat it sometimes.",
+  "Finally a fellow professional!",
+  "Keep practicing and one day you will be just as good as I am!",
+  "What happened to you?",
+  "You have to take it more serious!",
+  "I expect a great race!",
+  "Challenge is all I need!",
+  "focused, hard working, no fun no jokes ex soldier.",
+  "Precise,confident driving. Well done!",
+  "Decent timing. You are getting better and better.",
+  "You are practically evolving by the minute!",
+  "That is no proper way to race!",
+  "You have to concentrate more than that!",
+  "Don't expect less than maximum!",
+  "Just do your best!",
+  "Let's see what you can do!",
+  "Show me what you've got!",
+  "Good day for a race!",
+  "See you at the finish line!",
+  "Catch me if you can!",
+  "I'm feeling lucky today!",
+  "Oh! I almost forgot you were racing too!",
+  "Better luck next time!",
+  "It's all about talent, you know!",
+  "It was so not your day!",
+  "You need to do better than that!",
+  "I expected more from someone like you!",
+  "At least try to catch up next time!",
+  "You got lucky this time!",
+  "You got me on my bad day!",
+  "It won't be enough next time - I promise!",
+  "I see you have been practicing!",
+  "Greetings stranger! You seem to be an experienced driver. I am famous for my judge of character - that is why I'm giving you this car to enter and WIN this comptetition. Don't prove my instincts wrong!",
+  "Welcome to the world of dirty racing and even dirtier racers!Take this car and drive to victory! Don't forget: this is no place for rookies or mistakes. This is K-Rally!",
+  "This is the Championship everybody is talking about. With your skills and my money we can win this! It was wise to take this opportunity. Let the race begin!",
+  "I expected you back. Get behind the wheel and do what you do best!",
+  "What took you so long? The next race is about to begin!",
+  "Finally you are here! The others started to worry about you.",
+  "I see you are back. Good decision!",
+  "You again! What a surprise!",
+  "Where were you? I don't care. Just go and get your car!",
+  "I'm glad you decided to get back.",
+  "All the others are ready. What about you?",
+  "I hope you are fresh and ready to go",
+  "Come on! A baby can wreck a car with her eyes closed! It's unbelievable!",
+  "I didn't see this coming! You can go to McDonald's and start working to collect the money you owe me!",
+  "Tell me it never happened! Tell me I was watching the wrong car and you actually won!",
+  "That is definatelly not what I hoped to see from you. I'm very disappointed and I don't like it.",
+  "This is just ridiculous! You cost me more than you earn!",
+  "Congratulations! You definitely deserved to win!",
+  "Well done! There is champagne waiting for you!",
+  "Well done! Very well done indeed!",
+  "You actually show some sign of promise.",
+  "It was a decent round, I'm quite satisfied.",
+  "That was a quick round! Are you late from somewhere?",
+  "It is nice to see you win. I would like to get used to this!",
+  "Well done! Go and get ready to do it again!",
+  "Good race. I expected nothing less.",
+  "Great! I can actually see you winning the Championship!",
+  "You have good reason to celebrate but Championship is not over yet",
+  "Not too bad. Get just one position higher and I'm happy.",
+  "This one was tough. Next time try harder!",
+  "Being second is another word for losing and I don't like losing!",
+  "You didn't win this one. It won't happen again, right?",
+  "I know. You were tired and the weather was awful. I hate excuses!",
+  "What was that all about? 3rd place? You must be joking!",
+  "Did you stop for a drink or what? Concentrate a bit!",
+  "Three is NOT my lucky number and definitely not yours!",
+  "Last but one. Don't make me think I was wrong about you!",
+  "Not now. Just leave me alone for a while. Go and practice or something.",
+  "What was that? It wasn't your day that's for sure!",
+  "Perhaps I should have asked you grandma to race today!",
+  "Did you catch all their number plates? It is the same from the front too, you know!",
+  "I can't believe it! How could you get a driving license?",
+  "Did you get lost? You have a map in your car!",
+  "Well done! You have grown out this bunch - go and find some real opponents with this new car!",
+  "Just as I expected - I love to be proven right! Here is your reward: a new car in a new league.",
+  "Your abilities are outstanding and I think I have the right car to match them!",
+  "That is it! We have a champion and this champion is you! You have reached everything man can reach! Go and enjoy the glory - you deserve it!",
+  "You almost made it! Almost. What a sad word! Go back to square one and try again!",
+  "This is not enough! You have to try harder to reach the next league!",
+  "Shame you didn't make it this time but no worries, there is always tomorrow! Even for you!",
+  "You have to finish on top to get access to new challenges.",
+  "Why would you throw away all the money, experience and chance to progress? WHY?",
+  "You can't be serious! This is exactly what I did NOT expect to see from you!",
+  "Did your Mum call to get home for dinner? Well, you can't be late! Run! Run!",
+  "What did just happen? Whoever told you that the others are getting too far behind you in ranking, was joking!",
+  "I do hope you have a good reason to do this.",
+  "This is going to be a difficult one. Lose 3 times in a row against he Boss of this league, and you have to start it all over again.",
+  "One on one against the Boss of this league. You have only 3 chances to win so give it everything you've got!",
+  "I hope are ready for the Boss race. Good news: you have only one racer to defeat. Bad news: you have only 3 chances to try. Good luck!",
+  "Defeat this guy before he defeats you 3 times and you are ready to advance to the next league. But watch out! They call it a Boss race for a reason!",
+  "You have to start taking it seriously. You are one win away from winning the Championship!",
+  "This is you final chance to beat this guy. You don't want to lose this race and lose the Championship with it!",
+  "Everything hangs on this race. Try not to mess it up! This is a Championship final for God's sake!",
+  "I told you he is good! You just have to be better! Come on! You have two more chances.",
+  "One opportunity wasted. Pull yourself together and stop fooling around. You have only two more chances left!",
+  "That's all right. I didn't expect you to win for the first try. Go and give it another go!",
+  "This was your last chance to make it to the top and you failed. You were so close - next time you will succeed. You have to!",
+  "That is not the kind of driving I expected from you at the beginning. Talking of beginning. You know you have to start from scratch, don't you?",
+  "This was so unlikely to happen that I didn't even prepare a comment! And yet, here we are. So why did you buy this game at the first place?",
+  "Yes, I know. Next time it will be better, you will deliver what you promised and everyone will be happy. Let me see!",
+  "You should have had a bit more experience than this by now, shouldn't you? No? Oh well. Back to square 1.",
+  "Tough luck! I really thought you can make it this time. Worry not, I see you have tried and tried hard. I support you for another round if you are in. What do you think?",
+  "It's OK, I don't blame you. I told you these guys are tough. Give it another go so you can show them what you are really made of!",
+  "Don't think it's over just because you won - there is another group of drivers waiting for you with 6 leagues and plenty of challenges. Good luck! You'll need it.",
+  "Now that you have finished this Career you have two options. Keep racing for extra money and xp or try yourself in an other league. It is up to you.",
+  "Congratulations! This is quite an achievement! I think you are ready to meet the elite now. 7 leagues, the toguhest racers, sweat and tears await you in Hard mode!",
+  "Almost there. You must be disappointed! But have faith. At least one of use should. You might just make it next time.",
+  "There is really nothing more you can learn about driving! This is the end as I know it but you can always come back to make some money! I hear from now on the stakes are doubled!",
+  "Man, you did it! There is just no higher level you can get in leagues! You are welcome to stay and race for more money or try yourself in Career 2. They certainly need a racer like you!",
+  "There is always something to learn. It might be a different lesson for you than for me, but I hope we both just get better of it all. Will I see you again?",
+  "A familiar face from an other game, a true 'underground racer'. Licensed to Drill!",
+  "The sexiest miner you will ever meet in a mobile game. It seems she is a good driver too!",
+  "An aging teen with constant urge to prove that he is the best driver around. One day maybe...",
+  "You better watch out next time!",
+  "Don't think I care!",
+  "I won't let you win next time!",
+  "I've always known you're hopeless!",
+  "That \"\"L\"\" on your forehead isn't big enough!",
+  "Just do what you came to do, all right?",
+  "Don't even count on fair play!",
+  "Easygoing, loud, bighearted - the best person for a drink in the pub. Bad luck you have to race against each other.",
+  "Well done, buddy! You did it!",
+  "You should teach this at school!",
+  "Where did you learn those maneuvers? On a train?!",
+  "Come on, pal you make me laugh!",
+  "Hi, mate! Nice to see you around here!",
+  "The loser pays in the pub tonight!",
+  "The ideal receptionist: Mary \"Q.T.\" Stanford is just as efficient as sexy. Unfortunately she has always preferred racing to dating.",
+  "That is how a real driver does it, right?",
+  "Where did you learn those moves?",
+  "You have proved to be a very skilled driver!",
+  "Come on! My little sister can do better than that!",
+  "Such a perfect day for a race! May the better driver win!",
+  "I was told you're a good driver! I'm looking forward to racing against you!",
+  "Gary \"EGGHEAD\" Phelps can prepare for everything simply by calculating all the possible factors. He works and looks like a clockwork.",
+  "That was actually some very decent driving!",
+  "Impressive! Impressive indeed!",
+  "I may have miscalculated your chances.",
+  "Maybe you should consider practicing  before your next race.",
+  "The chance of success was very low, you have to admit!",
+  "Hm. You have a good chance to finish in second place today!",
+  "I'd wish you good luck but there is no such thing!",
+  "Fred \"Fixer\" Thompson makes his own cars and spends most of his time alone for a very obvious reason.",
+  "It must be my engine. I have to fix it for the next race!",
+  "Where did you get your car? I would really like to see that garage!",
+  "How on Earth could you win with THAT car?!",
+  "No way you could have won with THAT car!",
+  "You deserve nothing better than a scooter!",
+  "Do you really plan to race with this car? It will be fun!",
+  "That is almost a proper race car - let's see if you can drive it!",
+  "Tough guy with a bad attitude and even worse manners. He is dreaimg of racing F1 cars.",
+  "It takes more to impress me than winning one race!",
+  "Not bad from such a rookie!",
+  "Don't get used to this feeling!",
+  "I don't say I'm surprised, because I'm not.",
+  "Even worse than I expected.",
+  "Let's get on with it!",
+  "Who let you in this race? This is for grownups!",
+  "Your typical blond girl in daddy's Mercedes with way too much free time on her hand. Don't let her look fool you!",
+  "You really know how to impress a girl!",
+  "Wow! Do you have plans for tonight?",
+  "I hope it's not just the wheel you can handle this well!",
+  "How does it feel losing to a girl?",
+  "Shame! You seemed like such a nice guy.",
+  "What a nice car! I hope you can drive it too!",
+  "Hey! Do you feel like going for a drink after this race?",
+  "Bobby D. is from the black streets of LA. Impress him and you have made a friend for life! Yours, that is.",
+  "Smooth driving, bro'!",
+  "Hey, that was helluva race!",
+  "Wow! You blew it big time!",
+  "Crank it up a bit, you have more in you, don't you?",
+  "Give it all you've got - and we'll see who's got more!",
+  "I am ready when you are!",
+  "Aggressive, ruthless, more muscle than brain type of guy. You wouldn't want to meat him after dark.",
+  "Argh! It can't be!",
+  "You won't last long!",
+  "This punk is pure evil. Causing damage is more fun for him than anything else. Even the race is second to that.",
+  "You do it again and that will be your last race!",
+  "Just be happy you survived!",
+  "Be glad you stayed alive!",
+  "You are lucky to be in one piece!",
+  "Fresh meat! Great!",
+  "You'd better give up right now!",
+  "A sneaky, backstabbing, scheming creature who must have run away from a lab.",
+  "Not so fast, big guy!",
+  "Watch out, you may get hurt next time",
+  "Go to Options to turn auto acceleration on/off!",
+  "Go to Options to turn auto turbo on/off!",
+  "You can change the Controls in Options.",
+  "Every bonus you pick up earns you XPs!",
+  "Weapons can cause serious damage to others but they slow you car down!",
+  "Reading the Manual earns you 200 XPs.",
+  "Press right to raise your stakes in a bet!",
+  "Hitting spectators has its punishement!",
+  "Get to know your opponents - they are watching you too!",
+  "You can damage other cars by running into their back or side.",
+  "Your opponents buy upgrades too!",
+  "You get 25% Turbo refill at the end of every lap you finish in 2nd position!",
+  "You get 50% Turbo refill at the end of every lap you finish in 3rd position!",
+  "You get 75% Turbo refill at the end of every lap you finish in 4th position!",
+  "You can use mines and rockets to slow your opponents down.",
+  "Cause as much damage as you can. A burning car can't win!",
+  "Use your weapons wisely and you can win even against better cars.",
+  "Upgrade your Tires to increase your car's acceleration.",
+  "Upgrade your car's Engine to increase your maximum speed.",
+  "Upgrading the Shield will make your car more durable against attacks.",
+  "Driving in rain or snow does make a difference.",
+  "You can compete online with your best laptime from Ghost mode.",
+  "No animals were harmed during testing this game!",
+  "Egghead lives with his Mum in Seattle.",
+  "Seventeen plus nine is twenty six.",
+  "This is not a game related hint.",
+  "Always fasten your seatbelt!",
+  "Do not try to simulate this driving in real life!",
+  "Buy Super Miners, the award winnig puzzle-arcade game from Infinite Dreams!",
+  "Download new cars, gfx and tracks from www.idreams.pl",
+  "Publish your track records on www.idreams.pl",
+  "Don't eat yellow snow!",
+  "Every other racer has their own style. Study their strengths and weaknesses!",
+  "Visit www.idreams.pl regularly for exciting downloadable content!",
+  "You can find a free multiplayer client for your friend's device at idreams.pl!",
+  "Q.T. really likes to be on top! I'm talking about the Ranking list obviously!",
+  "The Development Team do not encourage violent driving in any way!",
+  "The colour of your opponents' cars is not changing in Championship.",
+  "The only way to slow you car down is having auto acceleration off,",
+  "Oops I did it again, I played with K-Rally, Got lost in the game! Oh baby, baby!",
+  "The owner of the pink rocket powered car with guns please come to the entrance!",
+  "After winning a Championship you can start another with better opponents.",
+  "We watched Herby & Lindsay Lohan over and over again to study real car physics.",
+  "Be realistic when you accept a bet. You can end up owing money to Sponsor!",
+  "Be careful when you pick your race in Career. It's way too easy to lose positions!",
+  "There should be a delicate balance between buying upgrades and new cars for Career.",
+  "When entering a race in Career always check the difficulty. It is a big big help!",
+  "Advancing in Career may be slow but it's a warm feeling when you see your name at Nr 1!",
+  "You can generate & enter codes for Random track. Remember and share the ones you like.",
+  "4 leagues with a bunch of rookies like you",
+  "6 leagues, this is where real racing starts",
+  "your chance to face the best racers in 7 leagues",
+  "; LOCKED %d XP required",
+  "; CAR LOCKED %d XP required",
+  "You have to buy FULL version",
+  " QUICK RACE unlocked!",
+  " Congratulations! You have unlocked CHAMPIONSHIP",
+  " Congratulations! You have unlocked CAREER",
+  " Congratulations! You have unlocked RANDOM TRACKS",
+  " Congratulations! You have unlocked GHOST MODE",
+  " Congratulations! You have unlocked ENTER SEED in random tracks",
+  "Well done! You have the experience now to drive a new car in Quick race!",
+  "Create new profile with \"RUSTY\" or \"DRILL\" as your name",
+  "Create new profile with \"MR.ROOT\" as your name",
+  "There is nothing more to unlock",
+  "I told you, there is nothing more to unlock",
+  "Finish the race in less than %02d:%02d:%02d and you can walk away $%d richer! Interested?",
+  "destroy %s and win $%d",
+  "win this race and take $%d",
+  "This is your lucky day! Beat the lap time of %02d:%02d:%02d and you can get $%d richer. What do you say?",
+  "What about earning a little extra cash? Finish a lap faster than %02d:%02d:%02d and you can take home  - $%d",
+  "If you finish this race under %02d:%02d:%02d I have $%d for you. Interested?",
+  "Would you risk $100 to win $%d ? You just have to make sure %s doesn't finish the race today!",
+  "It would worth $%d for me to see %s and his car wrecked. Give me few dolars and we have a deal!",
+  "Win this race and I'll make you $%d richer! Would you bet on yourself?",
+  "Get to the finish line before everyone else and you will get $%d! Do you dare to risk some cash?",
+  "Thanks, but I'm not a gambler!",
+  "Yeah! Why not? Here is my $%d",
+  "Congratulations! Here is your $%d",
+  "Well done! Good gambling! Take this $%d",
+  "$%d! You are robbing me! I have a family!",
+  "This is your lucky day - and not mine! This $%d is yours.",
+  "Well, maybe next time...",
+  "This is why you shouldn't gamble!",
+  "You didn't wear your lucky pants!",
+  "Thanks for the money - see you again soon!",
+  "Let's start with the basics! Control is everything. First you have to learn how to move you car.",
+  "Now a little more control. It's time to get familiar with steering.",
+  "Your car also has a Turbo meter. You can greatly increase your speed for short bursts - if you have the juice!",
+  "There are several different Bonuses you can pick up besides Turbo refills.",
+  "Tutorial 5 - circle",
+  "That's all you needed to know to start racing. Now you can get a bit of experience in Quick race to start your Championship as a serious racer!",
+  "----TUTORIAL - inside",
+  "Keep %(keyPRIMARY) pressed to accelerate, release it to slow down!",
+  "Keep %(keyPRIMARY) pressed to accelerate, release it to slow down! You can also steer your car using stylus.",
+  "Well done! Make sure you stay on the road all the time, your car is much faster there.",
+  "Keep %(keyLEFT) and %(keyRIGHT) to make your car turn.",
+  "That's it! Remember: your car, your upgrades, driving conditions - these all effect your steering!",
+  "Keep %(keySECONDARY) pressed to use your Turbo!",
+  "Keep %(keySECONDARY) pressed to use your Turbo! Also if you tap your screen in great distance from your car you will automatically use turbo.",
+  "Pick up and USE the Turbo refills wisely - timing can make you win or lose the race.",
+  "Try to collect Money to increase your earnings and Wrenches to repair car's damage!",
+  "This is the end of Demo Version. Please visit www.idreams.pl for more information"
+ ],
+ "short_labels": [
+  "Let's race!",
+  "Good race!",
+  "Way to go!",
+  "Congratulations!",
+  "--- THE END easy",
+  "#PS3not enough",
+  "Angielski",
+  "#PS7time",
+  "#PS7lap time",
+  "#PS2+%d XP BONUS",
+  "race over",
+  "Way to go, champ!",
+  "You're da man!",
+  "Darn it, you won!",
+  "Blast it! I lost!",
+  "You big loser!",
+  "Muhahaha!",
+  "Lucky.Very lucky!",
+  "#PS0for mines",
+  "www.idreams.pl",
+  "client",
+  "atilla katona",
+  "---arrows",
+  "speed",
+  "acceleration",
+  "shields",
+  "grip",
+  "your code:",
+  "searching...",
+  "PlkkkiP",
+  "VPNIljjjiHMPV",
+  "SlllkjjjjjjiS",
+  "VKjjjjjjjifKV",
+  "UJjjjjjifHSV",
+  "WQGjjjifqMPSW",
+  "UNqjifEKMPU",
+  "UNqhEKMPU",
+  " please wait",
+  "players not found",
+  "choose player",
+  "; Avatar locked",
+  "stupid",
+  "normal",
+  "auto",
+  "manual",
+  "Time to rest :)",
+  "cash",
+  "#PS3not available",
+  "#PS1your car",
+  "BOSS you lose",
+  "feature locked",
+  "time over",
+  "hint 5",
+  "hint 6",
+  "Press#PS24"
+ ],
+ "blocks": [
+  {
+   "header": "block @0x198B07 size=9617B strings=136",
+   "lines": [
+    "Driving like this can have really bad effect on your health.",
+    "Just as I expected!",
+    "No surprises there!",
+    "Do you have insurance?",
+    "Good luck! You'll need it!",
+    "JURIJ",
+    "This Russian ex-spy has nothing left in his life to pump up his adrenalin besides racing.This is the only thing he lives for. The only thing.",
+    "Godd race. We should repeat it sometimes.",
+    "Finally a fellow professional!",
+    "Keep practicing and one day you will be just as good as I am!",
+    "What happened to you?",
+    "You have to take it more serious!",
+    "I expect a great race!",
+    "Challenge is all I need!",
+    "MARKO",
+    "focused, hard working, no fun no jokes ex soldier.",
+    "Precise,confident driving. Well done!",
+    "Decent timing. You are getting better and better.",
+    "You are practically evolving by the minute!",
+    "That is no proper way to race!",
+    "You have to concentrate more than that!",
+    "Don't expect less than maximum!",
+    "Just do your best!",
+    "Let's see what you can do!",
+    "Show me what you've got!",
+    "Good day for a race!",
+    "See you at the finish line!",
+    "Catch me if you can!",
+    "Let's race!",
+    "I'm feeling lucky today!",
+    "Oh! I almost forgot you were racing too!",
+    "Better luck next time!",
+    "It's all about talent, you know!",
+    "It was so not your day!",
+    "You need to do better than that!",
+    "I expected more from someone like you!",
+    "At least try to catch up next time!",
+    "You got lucky this time!",
+    "You got me on my bad day!",
+    "Good race!",
+    "It won't be enough next time - I promise!",
+    "I see you have been practicing!",
+    "Way to go!",
+    "Congratulations!",
+    "--- GADANIE SPONSOR",
+    "Greetings stranger! You seem to be an experienced driver. I am famous for my judge of character - that is why I'm giving you this car to enter and WIN this comptetition. Don't prove my instincts wrong!",
+    "Welcome to the world of dirty racing and even dirtier racers!Take this car and drive to victory! Don't forget: this is no place for rookies or mistakes. This is K-Rally!",
+    "This is the Championship everybody is talking about. With your skills and my money we can win this! It was wise to take this opportunity. Let the race begin!",
+    "I expected you back. Get behind the wheel and do what you do best!",
+    "What took you so long? The next race is about to begin!",
+    "Finally you are here! The others started to worry about you.",
+    "I see you are back. Good decision!",
+    "You again! What a surprise!",
+    "Where were you? I don't care. Just go and get your car!",
+    "I'm glad you decided to get back.",
+    "All the others are ready. What about you?",
+    "I hope you are fresh and ready to go",
+    "Come on! A baby can wreck a car with her eyes closed! It's unbelievable!",
+    "I didn't see this coming! You can go to McDonald's and start working to collect the money you owe me!",
+    "Tell me it never happened! Tell me I was watching the wrong car and you actually won!",
+    "That is definatelly not what I hoped to see from you. I'm very disappointed and I don't like it.",
+    "This is just ridiculous! You cost me more than you earn!",
+    "Congratulations! You definitely deserved to win!",
+    "Well done! There is champagne waiting for you!",
+    "Well done! Very well done indeed!",
+    "You actually show some sign of promise.",
+    "It was a decent round, I'm quite satisfied.",
+    "That was a quick round! Are you late from somewhere?",
+    "It is nice to see you win. I would like to get used to this!",
+    "Well done! Go and get ready to do it again!",
+    "Good race. I expected nothing less.",
+    "Great! I can actually see you winning the Championship!",
+    "You have good reason to celebrate but Championship is not over yet",
+    "Not too bad. Get just one position higher and I'm happy.",
+    "This one was tough. Next time try harder!",
+    "Being second is another word for losing and I don't like losing!",
+    "You didn't win this one. It won't happen again, right?",
+    "I know. You were tired and the weather was awful. I hate excuses!",
+    "What was that all about? 3rd place? You must be joking!",
+    "Did you stop for a drink or what? Concentrate a bit!",
+    "Three is NOT my lucky number and definitely not yours!",
+    "Last but one. Don't make me think I was wrong about you!",
+    "Not now. Just leave me alone for a while. Go and practice or something.",
+    "What was that? It wasn't your day that's for sure!",
+    "Perhaps I should have asked you grandma to race today!",
+    "Did you catch all their number plates? It is the same from the front too, you know!",
+    "I can't believe it! How could you get a driving license?",
+    "Did you get lost? You have a map in your car!",
+    "Well done! You have grown out this bunch - go and find some real opponents with this new car!",
+    "Just as I expected - I love to be proven right! Here is your reward: a new car in a new league.",
+    "Your abilities are outstanding and I think I have the right car to match them!",
+    "That is it! We have a champion and this champion is you! You have reached everything man can reach! Go and enjoy the glory - you deserve it!",
+    "THE END2",
+    "THE END3",
+    "You almost made it! Almost. What a sad word! Go back to square one and try again!",
+    "This is not enough! You have to try harder to reach the next league!",
+    "Shame you didn't make it this time but no worries, there is always tomorrow! Even for you!",
+    "You have to finish on top to get access to new challenges.",
+    "Why would you throw away all the money, experience and chance to progress? WHY?",
+    "You can't be serious! This is exactly what I did NOT expect to see from you!",
+    "Did your Mum call to get home for dinner? Well, you can't be late! Run! Run!",
+    "What did just happen? Whoever told you that the others are getting too far behind you in ranking, was joking!",
+    "I do hope you have a good reason to do this.",
+    "This is going to be a difficult one. Lose 3 times in a row against he Boss of this league, and you have to start it all over again.",
+    "One on one against the Boss of this league. You have only 3 chances to win so give it everything you've got!",
+    "I hope are ready for the Boss race. Good news: you have only one racer to defeat. Bad news: you have only 3 chances to try. Good luck!",
+    "Defeat this guy before he defeats you 3 times and you are ready to advance to the next league. But watch out! They call it a Boss race for a reason!",
+    "You have to start taking it seriously. You are one win away from winning the Championship!",
+    "This is you final chance to beat this guy. You don't want to lose this race and lose the Championship with it!",
+    "Everything hangs on this race. Try not to mess it up! This is a Championship final for God's sake!",
+    "I told you he is good! You just have to be better! Come on! You have two more chances.",
+    "One opportunity wasted. Pull yourself together and stop fooling around. You have only two more chances left!",
+    "That's all right. I didn't expect you to win for the first try. Go and give it another go!",
+    "This was your last chance to make it to the top and you failed. You were so close - next time you will succeed. You have to!",
+    "That is not the kind of driving I expected from you at the beginning. Talking of beginning. You know you have to start from scratch, don't you?",
+    "This was so unlikely to happen that I didn't even prepare a comment! And yet, here we are. So why did you buy this game at the first place?",
+    "Yes, I know. Next time it will be better, you will deliver what you promised and everyone will be happy. Let me see!",
+    "You should have had a bit more experience than this by now, shouldn't you? No? Oh well. Back to square 1.",
+    "Tough luck! I really thought you can make it this time. Worry not, I see you have tried and tried hard. I support you for another round if you are in. What do you think?",
+    "It's OK, I don't blame you. I told you these guys are tough. Give it another go so you can show them what you are really made of!",
+    "--- THE END easy",
+    "Don't think it's over just because you won - there is another group of drivers waiting for you with 6 leagues and plenty of challenges. Good luck! You'll need it.",
+    "Now that you have finished this Career you have two options. Keep racing for extra money and xp or try yourself in an other league. It is up to you.",
+    "This was your last chance to make it to the top and you failed. You were so close - next time you will succeed. You have to!",
+    "That is not the kind of driving I expected from you at the beginning. Talking of beginning. You know you have to start from scratch, don't you?",
+    "This was so unlikely to happen that I didn't even prepare a comment! And yet, here we are. So why did you buy this game at the first place?",
+    "Congratulations! This is quite an achievement! I think you are ready to meet the elite now. 7 leagues, the toguhest racers, sweat and tears await you in Hard mode!",
+    "Almost there. You must be disappointed! But have faith. At least one of use should. You might just make it next time.",
+    "Yes, I know. Next time it will be better, you will deliver what you promised and everyone will be happy. Let me see!",
+    "You should have had a bit more experience than this by now, shouldn't you? No? Oh well. Back to square 1.",
+    "There is really nothing more you can learn about driving! This is the end as I know it but you can always come back to make some money! I hear from now on the stakes are doubled!",
+    "Man, you did it! There is just no higher level you can get in leagues! You are welcome to stay and race for more money or try yourself in Career 2. They certainly need a racer like you!",
+    "Tough luck! I really thought you can make it this time. Worry not, I see you have tried and tried hard. I support you for another round if you are in. What do you think?",
+    "It's OK, I don't blame you. I told you these guys are tough. Give it another go so you can show them what you are really made of!",
+    "There is always something to learn. It might be a different lesson for you than for me, but I hope we both just get better of it all. Will I see you again?",
+    "#PS3not enough"
+   ]
+  },
+  {
+   "header": "block @0x1977A9 size=4957B strings=111",
+   "lines": [
+    "Angielski",
+    "#PS7time",
+    "#PS7lap time",
+    "#PS3WRONG WAY!",
+    "#PS2+%d XP BONUS",
+    "#PS2NEW LAP RECORD!",
+    "[ FINISH ]",
+    "#PS1CAR DAMAGED!",
+    "ARE YOU SURE?",
+    "race over",
+    "SPONSOR",
+    "BETS",
+    "DR.DRILL",
+    "A familiar face from an other game, a true 'underground racer'. Licensed to Drill!",
+    "RUSTY",
+    "The sexiest miner you will ever meet in a mobile game. It seems she is a good driver too!",
+    "KIDDO",
+    "An aging teen with constant urge to prove that he is the best driver around. One day maybe...",
+    "You better watch out next time!",
+    "Don't think I care!",
+    "I won't let you win next time!",
+    "I've always known you're hopeless!",
+    "That \"\"L\"\" on your forehead isn't big enough!",
+    "Just do what you came to do, all right?",
+    "Don't even count on fair play!",
+    "THE VIKING",
+    "Easygoing, loud, bighearted - the best person for a drink in the pub. Bad luck you have to race against each other.",
+    "Well done, buddy! You did it!",
+    "You should teach this at school!",
+    "Way to go, champ!",
+    "Where did you learn those maneuvers? On a train?!",
+    "Come on, pal you make me laugh!",
+    "Hi, mate! Nice to see you around here!",
+    "The loser pays in the pub tonight!",
+    "The ideal receptionist: Mary \"Q.T.\" Stanford is just as efficient as sexy. Unfortunately she has always preferred racing to dating.",
+    "That is how a real driver does it, right?",
+    "Where did you learn those moves?",
+    "You have proved to be a very skilled driver!",
+    "Come on! My little sister can do better than that!",
+    "I expected more from someone like you!",
+    "Such a perfect day for a race! May the better driver win!",
+    "I was told you're a good driver! I'm looking forward to racing against you!",
+    "EGGHEAD",
+    "Gary \"EGGHEAD\" Phelps can prepare for everything simply by calculating all the possible factors. He works and looks like a clockwork.",
+    "That was actually some very decent driving!",
+    "Impressive! Impressive indeed!",
+    "I may have miscalculated your chances.",
+    "Maybe you should consider practicing  before your next race.",
+    "The chance of success was very low, you have to admit!",
+    "Hm. You have a good chance to finish in second place today!",
+    "I'd wish you good luck but there is no such thing!",
+    "FIXER",
+    "Fred \"Fixer\" Thompson makes his own cars and spends most of his time alone for a very obvious reason.",
+    "It must be my engine. I have to fix it for the next race!",
+    "Where did you get your car? I would really like to see that garage!",
+    "How on Earth could you win with THAT car?!",
+    "No way you could have won with THAT car!",
+    "You deserve nothing better than a scooter!",
+    "Do you really plan to race with this car? It will be fun!",
+    "That is almost a proper race car - let's see if you can drive it!",
+    "T.SHARQUE",
+    "Tough guy with a bad attitude and even worse manners. He is dreaimg of racing F1 cars.",
+    "It takes more to impress me than winning one race!",
+    "Not bad from such a rookie!",
+    "Don't get used to this feeling!",
+    "I don't say I'm surprised, because I'm not.",
+    "Even worse than I expected.",
+    "Let's get on with it!",
+    "Who let you in this race? This is for grownups!",
+    "SWEETHART",
+    "Your typical blond girl in daddy's Mercedes with way too much free time on her hand. Don't let her look fool you!",
+    "You really know how to impress a girl!",
+    "Wow! Do you have plans for tonight?",
+    "I hope it's not just the wheel you can handle this well!",
+    "How does it feel losing to a girl?",
+    "Shame! You seemed like such a nice guy.",
+    "What a nice car! I hope you can drive it too!",
+    "Hey! Do you feel like going for a drink after this race?",
+    "BOBBY D.",
+    "Bobby D. is from the black streets of LA. Impress him and you have made a friend for life! Yours, that is.",
+    "You're da man!",
+    "Smooth driving, bro'!",
+    "Hey, that was helluva race!",
+    "Wow! You blew it big time!",
+    "Crank it up a bit, you have more in you, don't you?",
+    "Give it all you've got - and we'll see who's got more!",
+    "I am ready when you are!",
+    "THUGS",
+    "Aggressive, ruthless, more muscle than brain type of guy. You wouldn't want to meat him after dark.",
+    "Darn it, you won!",
+    "Argh! It can't be!",
+    "Blast it! I lost!",
+    "You big loser!",
+    "Muhahaha!",
+    "Let's race!",
+    "You won't last long!",
+    "VULTAR",
+    "This punk is pure evil. Causing damage is more fun for him than anything else. Even the race is second to that.",
+    "You do it again and that will be your last race!",
+    "Just be happy you survived!",
+    "Lucky.Very lucky!",
+    "Be glad you stayed alive!",
+    "You are lucky to be in one piece!",
+    "Fresh meat! Great!",
+    "You'd better give up right now!",
+    "GUILY",
+    "A sneaky, backstabbing, scheming creature who must have run away from a lab.",
+    "Not so fast, big guy!",
+    "Watch out, you may get hurt next time"
+   ]
+  },
+  {
+   "header": "block @0x19BD89 size=3284B strings=61",
+   "lines": [
+    "#PS0for mines",
+    "RESUME",
+    "MUSIC VOLUME <> #EM",
+    "SOUND VOLUME <> #EF",
+    "EXIT RACE",
+    "Go to Options to turn auto acceleration on/off!",
+    "Go to Options to turn auto turbo on/off!",
+    "You can change the Controls in Options.",
+    "Every bonus you pick up earns you XPs!",
+    "Weapons can cause serious damage to others but they slow you car down!",
+    "Reading the Manual earns you 200 XPs.",
+    "Press right to raise your stakes in a bet!",
+    "Hitting spectators has its punishement!",
+    "Get to know your opponents - they are watching you too!",
+    "You can damage other cars by running into their back or side.",
+    "Your opponents buy upgrades too!",
+    "You get 25% Turbo refill at the end of every lap you finish in 2nd position!",
+    "You get 50% Turbo refill at the end of every lap you finish in 3rd position!",
+    "You get 75% Turbo refill at the end of every lap you finish in 4th position!",
+    "You can use mines and rockets to slow your opponents down.",
+    "Cause as much damage as you can. A burning car can't win!",
+    "Use your weapons wisely and you can win even against better cars.",
+    "Upgrade your Tires to increase your car's acceleration.",
+    "Upgrade your car's Engine to increase your maximum speed.",
+    "Upgrading the Shield will make your car more durable against attacks.",
+    "Driving in rain or snow does make a difference.",
+    "You can compete online with your best laptime from Ghost mode.",
+    "No animals were harmed during testing this game!",
+    "Egghead lives with his Mum in Seattle.",
+    "Seventeen plus nine is twenty six.",
+    "This is not a game related hint.",
+    "Always fasten your seatbelt!",
+    "Do not try to simulate this driving in real life!",
+    "Buy Super Miners, the award winnig puzzle-arcade game from Infinite Dreams!",
+    "www.idreams.pl",
+    "Download new cars, gfx and tracks from www.idreams.pl",
+    "Publish your track records on www.idreams.pl",
+    "Don't eat yellow snow!",
+    "Every other racer has their own style. Study their strengths and weaknesses!",
+    "Visit www.idreams.pl regularly for exciting downloadable content!",
+    "You can find a free multiplayer client for your friend's device at idreams.pl!",
+    "Q.T. really likes to be on top! I'm talking about the Ranking list obviously!",
+    "The Development Team do not encourage violent driving in any way!",
+    "The colour of your opponents' cars is not changing in Championship.",
+    "The only way to slow you car down is having auto acceleration off,",
+    "Oops I did it again, I played with K-Rally, Got lost in the game! Oh baby, baby!",
+    "The owner of the pink rocket powered car with guns please come to the entrance!",
+    "After winning a Championship you can start another with better opponents.",
+    "We watched Herby & Lindsay Lohan over and over again to study real car physics.",
+    "Be realistic when you accept a bet. You can end up owing money to Sponsor!",
+    "Be careful when you pick your race in Career. It's way too easy to lose positions!",
+    "There should be a delicate balance between buying upgrades and new cars for Career.",
+    "When entering a race in Career always check the difficulty. It is a big big help!",
+    "Advancing in Career may be slow but it's a warm feeling when you see your name at Nr 1!",
+    "You can generate & enter codes for Random track. Remember and share the ones you like.",
+    "EASY",
+    "MEDIUM",
+    "HARD",
+    "REPAIR 5%",
+    "#PS4TURBO",
+    "ROCKET +1"
+   ]
+  },
+  {
+   "header": "block @0x11B70A size=1033B strings=55",
+   "lines": []
+  },
+  {
+   "header": "block @0x195CD2 size=3391B strings=53",
+   "lines": [
+    "Angielski",
+    "www.idreams.pl",
+    "ACCEPT",
+    "CANCEL",
+    "BACK",
+    "client",
+    "atilla katona",
+    "UNDEFINED",
+    "---arrows",
+    "CENTER",
+    "MENU LEFT",
+    "MENU RIGHT",
+    "BACK",
+    "HARD1",
+    "HARD2",
+    "HARD3",
+    "HARD4",
+    "SPACE",
+    "HOME",
+    "ANSWER",
+    "HANGUP",
+    "CAMERA",
+    "INTERNET",
+    "FUNCTION",
+    "SLEFT",
+    "SRIGHT",
+    "JOG UP",
+    "JOG DOWN",
+    "JOG CENTER",
+    "YELLOW",
+    "JOG BACKWARD",
+    "JOG FORWARD",
+    "       DIFFICULTY LEVEL }",
+    "4 leagues with a bunch of rookies like you",
+    "6 leagues, this is where real racing starts",
+    "your chance to face the best racers in 7 leagues",
+    "{YOUR BEST LAP #LT}",
+    "{ YOUR RACE TIME #RT }",
+    "  LAP RECORD #BL }",
+    "{ LAP RECORD #BL }",
+    "  TRACK RECORD #BR }",
+    "{ TRACK RECORD #BR }",
+    "LUDZIKI KILLED #PK",
+    "PRICE #YP",
+    "speed",
+    "acceleration",
+    "shields",
+    "grip",
+    "your code:",
+    "searching..."
+   ]
+  },
+  {
+   "header": "block @0xFA092 size=870B strings=44",
+   "lines": [
+    "IOPSW",
+    "VSMIGGHMSUV",
+    "PlkkkiP",
+    "VPNIljjjiHMPV",
+    "SlllkjjjjjjiS",
+    "VKjjjjjjjifKV",
+    "UJjjjjjifHSV",
+    "WQGjjjifqMPSW",
+    "UNqjifEKMPU",
+    "UNqhEKMPU",
+    "UNJKMPU",
+    "PlkkkiP",
+    "VPNIljjjiHMPV",
+    "SlllkjjjjjjiS",
+    "VKjjjjjjjifKV",
+    "UJjjjjjifHSV",
+    "WQGjjjifqMPSW",
+    "UNqjifEKMPU",
+    "UNqhEKMPU",
+    "UNJKMPU",
+    "PlkkkiP",
+    "VPNIljjjiHMPV",
+    "SlllkjjjjjjiS",
+    "VKjjjjjjjifKV",
+    "UJjjjjjifHSV",
+    "WQGjjjifqMPSW",
+    "UNqjifEKMPU",
+    "UNqhEKMPU",
+    "UNJKMPU"
+   ]
+  },
+  {
+   "header": "block @0x196A13 size=1509B strings=36",
+   "lines": [
+    " please wait",
+    "players not found",
+    "choose player",
+    "--- LOCKED",
+    "; LOCKED %d XP required",
+    "; Avatar locked",
+    "; CAR LOCKED %d XP required",
+    "You have to buy FULL version",
+    "stupid",
+    "normal",
+    "auto",
+    "manual",
+    "{ DEVELOPED BY }",
+    "{ SOUNDS }",
+    "{ GAME TYPE }",
+    "{SIMPLE}",
+    "{ADVANCE}",
+    "SOLD!",
+    " QUICK RACE unlocked!",
+    " Congratulations! You have unlocked CHAMPIONSHIP",
+    " Congratulations! You have unlocked CAREER",
+    " Congratulations! You have unlocked RANDOM TRACKS",
+    " Congratulations! You have unlocked GHOST MODE",
+    " Congratulations! You have unlocked ENTER SEED in random tracks",
+    " CHANGE SKINS IN QUICK MODE UNLOCKED!",
+    "Well done! You have the experience now to drive a new car in Quick race!",
+    "Create new profile with \"RUSTY\" or \"DRILL\" as your name",
+    "Create new profile with \"MR.ROOT\" as your name",
+    "There is nothing more to unlock",
+    "I told you, there is nothing more to unlock",
+    "Time to rest :)",
+    "--- ENTER CODE",
+    "ACCEPT",
+    "CODE ACCEPTED",
+    "CODE REJECTED"
+   ]
+  },
+  {
+   "header": "block @0x11D22E size=1102B strings=30",
+   "lines": []
+  },
+  {
+   "header": "block @0x19B09A size=1617B strings=27",
+   "lines": [
+    "cash",
+    "#PS3not available",
+    "Finish the race in less than %02d:%02d:%02d and you can walk away $%d richer! Interested?",
+    "destroy %s and win $%d",
+    "win this race and take $%d",
+    "This is your lucky day! Beat the lap time of %02d:%02d:%02d and you can get $%d richer. What do you say?",
+    "What about earning a little extra cash? Finish a lap faster than %02d:%02d:%02d and you can take home  - $%d",
+    "Finish the race in less than %02d:%02d:%02d and you can walk away $%d richer! Interested?",
+    "If you finish this race under %02d:%02d:%02d I have $%d for you. Interested?",
+    "Would you risk $100 to win $%d ? You just have to make sure %s doesn't finish the race today!",
+    "It would worth $%d for me to see %s and his car wrecked. Give me few dolars and we have a deal!",
+    "Win this race and I'll make you $%d richer! Would you bet on yourself?",
+    "Get to the finish line before everyone else and you will get $%d! Do you dare to risk some cash?",
+    "Thanks, but I'm not a gambler!",
+    "Yeah! Why not? Here is my $%d",
+    "Congratulations! Here is your $%d",
+    "Well done! Good gambling! Take this $%d",
+    "$%d! You are robbing me! I have a family!",
+    "This is your lucky day - and not mine! This $%d is yours.",
+    "Well, maybe next time...",
+    "This is why you shouldn't gamble!",
+    "You didn't wear your lucky pants!",
+    "Thanks for the money - see you again soon!",
+    "#PS2SOLD!",
+    "#PS1your car",
+    "BOSS you lose",
+    "feature locked"
+   ]
+  },
+  {
+   "header": "block @0x19B6ED size=1518B strings=21",
+   "lines": [
+    "time over",
+    "Let's start with the basics! Control is everything. First you have to learn how to move you car.",
+    "Now a little more control. It's time to get familiar with steering.",
+    "Your car also has a Turbo meter. You can greatly increase your speed for short bursts - if you have the juice!",
+    "There are several different Bonuses you can pick up besides Turbo refills.",
+    "Tutorial 5 - circle",
+    "That's all you needed to know to start racing. Now you can get a bit of experience in Quick race to start your Championship as a serious racer!",
+    "----TUTORIAL - inside",
+    "Keep %(keyPRIMARY) pressed to accelerate, release it to slow down!",
+    "Keep %(keyPRIMARY) pressed to accelerate, release it to slow down! You can also steer your car using stylus.",
+    "Well done! Make sure you stay on the road all the time, your car is much faster there.",
+    "Keep %(keyLEFT) and %(keyRIGHT) to make your car turn.",
+    "That's it! Remember: your car, your upgrades, driving conditions - these all effect your steering!",
+    "Keep %(keySECONDARY) pressed to use your Turbo!",
+    "Keep %(keySECONDARY) pressed to use your Turbo! Also if you tap your screen in great distance from your car you will automatically use turbo.",
+    "Pick up and USE the Turbo refills wisely - timing can make you win or lose the race.",
+    "Try to collect Money to increase your earnings and Wrenches to repair car's damage!",
+    "hint 5",
+    "hint 6",
+    "This is the end of Demo Version. Please visit www.idreams.pl for more information",
+    "Press#PS24"
+   ]
+  }
+ ]
+};
+
+</script>
+<script>
+// audio.js - 全程序化音效与音乐（WebAudio 合成，零原版素材）
+const Sound = (() => {
+  let ctx = null;
+  let master, sfxBus, engineBus, musicBus;
+  let started = false;
+  let muted = false;
+
+  // 引擎声节点
+  let eng = null;
+  let skid = null;
+  let noiseBuf = null;
+  const played = {};
+
+  function makeNoise(seconds = 2) {
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = 0.85; sfxBus.connect(master);
+    engineBus = ctx.createGain(); engineBus.gain.value = 0.0; engineBus.connect(master);
+    musicBus = ctx.createGain(); musicBus.gain.value = 0.35; musicBus.connect(master);
+    noiseBuf = makeNoise(2);
+    started = true;
+  }
+
+  function now() { return ctx ? ctx.currentTime : 0; }
+
+  // ---------- 引擎 ----------
+  function engineStart() {
+    if (!started) return;
+    if (eng) return;
+    const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 60;
+    const o2 = ctx.createOscillator(); o2.type = 'square';   o2.frequency.value = 31;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700; lp.Q.value = 6;
+    const g1 = ctx.createGain(); g1.gain.value = 0.5;
+    const g2 = ctx.createGain(); g2.gain.value = 0.25;
+    o1.connect(g1); o2.connect(g2); g1.connect(lp); g2.connect(lp); lp.connect(engineBus);
+    o1.start(); o2.start();
+    eng = { o1, o2, lp, g1, g2 };
+    engineBus.gain.setTargetAtTime(0.30, ctx.currentTime, 0.2);
+  }
+
+  function engineStop() {
+    if (!eng) return;
+    const t = now();
+    engineBus.gain.setTargetAtTime(0, t, 0.12);
+    const e = eng; eng = null;
+    setTimeout(() => { try { e.o1.stop(); e.o2.stop(); } catch (err) {} }, 500);
+  }
+
+  // ratio 0..1, throttle 0..1, offroad bool
+  function engineUpdate(ratio, throttle, offroad) {
+    if (!started || !eng) return;
+    const t = now();
+    const f = 55 + ratio * 190;
+    eng.o1.frequency.setTargetAtTime(f, t, 0.06);
+    eng.o2.frequency.setTargetAtTime(f * 0.5, t, 0.06);
+    eng.lp.frequency.setTargetAtTime(420 + ratio * 2200 + (offroad ? -180 : 0), t, 0.08);
+    const target = (0.18 + throttle * 0.22 + ratio * 0.1) * (muted ? 0 : 1);
+    engineBus.gain.setTargetAtTime(target, t, 0.1);
+  }
+
+  // ---------- 打滑 / 风声 ----------
+  function skidStart() {
+    if (!started || skid) return;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1600; bp.Q.value = 1.2;
+    const g = ctx.createGain(); g.gain.value = 0;
+    src.connect(bp); bp.connect(g); g.connect(sfxBus); src.start();
+    skid = { src, bp, g };
+  }
+  function skidUpdate(amount, offroad) {
+    if (!skid) return;
+    const t = now();
+    skid.g.gain.setTargetAtTime(Math.min(0.22, amount * 0.22), t, 0.05);
+    skid.bp.frequency.setTargetAtTime(offroad ? 900 : 1800, t, 0.05);
+  }
+  function skidStop() {
+    if (!skid) return;
+    const s = skid; skid = null;
+    s.g.gain.setTargetAtTime(0, now(), 0.08);
+    setTimeout(() => { try { s.src.stop(); } catch (e) {} }, 400);
+  }
+
+  // ---------- 一次性音效 ----------
+  function blip(freq, dur, type = 'square', vol = 0.18, slideTo = null) {
+    if (!started) return;
+    const t = now();
+    const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  function noiseBurst(dur, filterType, f0, f1, vol, q = 1) {
+    if (!started) return;
+    const t = now();
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = filterType;
+    f.frequency.setValueAtTime(f0, t);
+    f.frequency.exponentialRampToValueAtTime(Math.max(60, f1), t + dur);
+    f.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(sfxBus);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+
+  const api = {
+    init,
+    get ready() { return started; },
+    get muted() { return muted; },
+    get context() { return ctx; },
+    attachAnalyser() {
+      if (!ctx) return null;
+      const a = ctx.createAnalyser();
+      a.fftSize = 2048;
+      master.connect(a);
+      return a;
+    },
+    toggleMute() { muted = !muted; if (master) master.gain.setTargetAtTime(muted ? 0 : 0.9, now(), 0.05); return muted; },
+    engineStart, engineStop, engineUpdate,
+    skidStart, skidUpdate, skidStop,
+
+    uiClick() { blip(880, 0.06, 'square', 0.12); },
+    uiConfirm() { blip(660, 0.07, 'square', 0.14); blip2(990, 0.09, 'square', 0.12, 0.06); },
+    countdownBeep(final) {
+      if (final) blip(990, 0.45, 'sawtooth', 0.22);
+      else blip(560, 0.16, 'square', 0.2);
+    },
+    lapChime() { blip(784, 0.16, 'triangle', 0.16); blip2(1175, 0.22, 'triangle', 0.14, 0.1); },
+    pickup() { blip(660, 0.07, 'triangle', 0.18); blip2(990, 0.09, 'triangle', 0.16, 0.05); blip2(1320, 0.1, 'triangle', 0.13, 0.1); },
+    rocket() { noiseBurst(0.35, 'bandpass', 500, 3200, 0.28, 2); blip(180, 0.25, 'sawtooth', 0.12, 60); },
+    mineDrop() { blip(140, 0.18, 'square', 0.2, 60); noiseBurst(0.15, 'lowpass', 900, 200, 0.2); },
+    explosion() {
+      noiseBurst(0.7, 'lowpass', 2400, 120, 0.55, 0.8);
+      blip(90, 0.5, 'sine', 0.4, 38);
+      blip2(150, 0.25, 'square', 0.18, 50, 0.02);
+    },
+    damage() { noiseBurst(0.25, 'bandpass', 1800, 400, 0.3, 3); blip(240, 0.2, 'square', 0.16, 110); },
+    finish(win) {
+      const notes = win ? [523, 659, 784, 1047] : [523, 440, 349, 262];
+      notes.forEach((f, i) => blip2(f, 0.32, 'sawtooth', 0.16, i * 0.16));
+      if (win) blip2(1568, 0.6, 'triangle', 0.12, 0.7);
+    },
+  };
+
+  // 延后触发的辅助（避免嵌套依赖 now() 的时序问题）
+  function blip2(freq, dur, type, vol, delay, slideTo) {
+    if (!started) return;
+    const t = now() + (delay || 0);
+    const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + 0.03);
+  }
+
+  // ---------- 程序化音乐（synthwave 循环） ----------
+  let musicTimer = null, step = 0;
+  const BASS = [55, 55, 82.4, 73.4];
+  const ARP = [220, 277.2, 329.6, 277.2, 220, 329.6, 415.3, 329.6];
+
+  function musicStart() {
+    if (!started || musicTimer) return;
+    step = 0;
+    const tick = () => {
+      if (!ctx || muted) return;
+      const t = now();
+      // bass：每拍一个
+      if (step % 4 === 0) {
+        const f = BASS[(step / 4 | 0) % BASS.length];
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+        const flt = ctx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 420;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0, t);
+        g.gain.linearRampToValueAtTime(0.22, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+        o.connect(flt); flt.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.4);
+      }
+      // arp：十六分音符
+      const f2 = ARP[step % ARP.length];
+      const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = f2;
+      const g2 = ctx.createGain();
+      g2.gain.setValueAtTime(0.0, t);
+      g2.gain.linearRampToValueAtTime(0.055, t + 0.008);
+      g2.gain.exponentialRampToValueAtTime(0.0005, t + 0.14);
+      o2.connect(g2); g2.connect(musicBus); o2.start(t); o2.stop(t + 0.18);
+      step++;
+    };
+    musicTimer = setInterval(tick, 150);
+  }
+  function musicStop() {
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+  api.musicStart = musicStart;
+  api.musicStop = musicStop;
+
+  return api;
+})();
+
+</script>
+<script>
+// art.js - 写实俯视车辆 + 特效（全部程序化绘制）
+const Art = (() => {
+  const SS = 3;                 // 精灵超采样倍数
+  let carShadowSprite = null;
+  const spriteCache = new Map();
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function getCarShadow() {
+    if (carShadowSprite) return carShadowSprite;
+    const R = 64;
+    const c = document.createElement('canvas');
+    c.width = c.height = R * 2;
+    const cg = c.getContext('2d');
+    const grd = cg.createRadialGradient(R, R, 0, R, R, R);
+    grd.addColorStop(0, 'rgba(0,0,0,.62)');
+    grd.addColorStop(0.6, 'rgba(0,0,0,.30)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    cg.fillStyle = grd;
+    cg.beginPath(); cg.arc(R, R, R, 0, Math.PI * 2); cg.fill();
+    carShadowSprite = c;
+    return c;
+  }
+
+  // 各车型比例（半长 L / 半宽 Wd / 轮距 / 驾驶舱位置）
+  const BODIES = {
+    sport:   { L: 31, Wd: 12.5, wheelL: 10, axleF: -19, axleR: 20, cabinY: -2, cabinW: 8.2, wing: true,  scoop: true },
+    muscle:  { L: 30, Wd: 14,   wheelL: 10, axleF: -18, axleR: 19, cabinY: -1, cabinW: 9.2, wing: false, scoop: true },
+    sedan:   { L: 32, Wd: 13,   wheelL: 9.5, axleF: -20, axleR: 21, cabinY: 0, cabinW: 9.6, wing: false, scoop: false },
+    compact: { L: 24, Wd: 12,   wheelL: 8, axleF: -14, axleR: 15, cabinY: -1, cabinW: 9.2, wing: false, scoop: false },
+    truck:   { L: 34, Wd: 15,   wheelL: 10.5, axleF: -22, axleR: 23, cabinY: -14, cabinW: 10, wing: false, scoop: false, bed: true },
+    wagon:   { L: 33, Wd: 13.5, wheelL: 9.5, axleF: -21, axleR: 22, cabinY: 2, cabinW: 10, wing: false, scoop: false },
+  };
+
+  // 生成一辆车的精灵（超采样绘制，运行时缩放）
+  function buildCarSprite(style) {
+    const B = BODIES[style.body] || BODIES.sedan;
+    const pad = 26;
+    const w = (B.Wd + pad) * 2 * SS;
+    const h = (B.L + pad) * 2 * SS;
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    g.translate(w / 2, h / 2);
+    g.scale(SS, SS);
+
+    const L = B.L, Wd = B.Wd;
+    const main = style.main, dark = style.dark, light = style.light;
+
+    // ---- 轮胎 ----
+    function tire(x, y, len) {
+      const gx = g.createLinearGradient(x, 0, x + 7, 0);
+      gx.addColorStop(0, '#08090b');
+      gx.addColorStop(0.5, '#1b1d21');
+      gx.addColorStop(1, '#0a0b0d');
+      g.fillStyle = gx;
+      roundRect(g, x, y, 7, len, 2.4); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.08)';
+      g.lineWidth = 0.5;
+      for (let i = 1; i < 6; i++) {
+        g.beginPath();
+        g.moveTo(x + 0.8, y + (len / 6) * i);
+        g.lineTo(x + 6.2, y + (len / 6) * i);
+        g.stroke();
+      }
+    }
+
+    const wl = B.wheelL;
+
+    // ---- 车身轮廓 ----
+    function bodyPath() {
+      g.beginPath();
+      if (style.body === 'truck') {
+        g.moveTo(-Wd, -L);
+        g.lineTo(Wd, -L);
+        g.lineTo(Wd, L * 0.15);
+        g.lineTo(Wd * 0.92, L);
+        g.lineTo(-Wd * 0.92, L);
+        g.lineTo(-Wd, L * 0.15);
+        g.closePath();
+        return;
+      }
+      const nose = style.body === 'sport' ? 0.62 : 0.78;
+      g.moveTo(0, -L);
+      g.bezierCurveTo(Wd * nose, -L * 0.86, Wd, -L * 0.42, Wd, 0);
+      g.bezierCurveTo(Wd, L * 0.44, Wd * 0.84, L * 0.88, 0, L);
+      g.bezierCurveTo(-Wd * 0.84, L * 0.88, -Wd, L * 0.44, -Wd, 0);
+      g.bezierCurveTo(-Wd, -L * 0.42, -Wd * nose, -L * 0.86, 0, -L);
+      g.closePath();
+    }
+
+    // 车漆（横向金属渐变）
+    const paint = g.createLinearGradient(-Wd, 0, Wd, 0);
+    paint.addColorStop(0.00, dark);
+    paint.addColorStop(0.18, main);
+    paint.addColorStop(0.36, light);
+    paint.addColorStop(0.46, '#ffffff');
+    paint.addColorStop(0.54, light);
+    paint.addColorStop(0.74, main);
+    paint.addColorStop(1.00, dark);
+    bodyPath();
+    g.fillStyle = paint;
+    g.fill();
+
+    // 车漆内的细微条纹（金属感）
+    g.save();
+    bodyPath(); g.clip();
+    g.globalAlpha = 0.05;
+    g.fillStyle = '#fff';
+    for (let i = -Wd; i < Wd; i += 2.2) {
+      g.fillRect(i, -L, 0.7, L * 2);
+    }
+    g.globalAlpha = 1;
+    // 车身暗部（前后收边）
+    const edge = g.createLinearGradient(0, -L, 0, L);
+    edge.addColorStop(0, 'rgba(0,0,0,.35)');
+    edge.addColorStop(0.12, 'rgba(0,0,0,0)');
+    edge.addColorStop(0.85, 'rgba(0,0,0,0)');
+    edge.addColorStop(1, 'rgba(0,0,0,.45)');
+    g.fillStyle = edge;
+    g.fillRect(-Wd, -L, Wd * 2, L * 2);
+    g.restore();
+
+    // 车身描边
+    bodyPath();
+    g.strokeStyle = 'rgba(0,0,0,.55)';
+    g.lineWidth = 0.8;
+    g.stroke();
+
+    // ---- 引擎盖 / 行李箱分区线 ----
+    g.strokeStyle = 'rgba(0,0,0,.28)';
+    g.lineWidth = 0.6;
+    g.beginPath();
+    g.moveTo(-Wd * 0.92, -L * 0.34); g.lineTo(Wd * 0.92, -L * 0.34);
+    g.moveTo(-Wd * 0.92, L * 0.34);  g.lineTo(Wd * 0.92, L * 0.34);
+    g.stroke();
+
+    // ---- 驾驶舱（车顶） ----
+    const cy = B.cabinY, cw = B.cabinW;
+    const cabinTop = cy - L * 0.26, cabinBot = cy + L * 0.24;
+    const roof = g.createLinearGradient(-cw, 0, cw, 0);
+    roof.addColorStop(0, dark);
+    roof.addColorStop(0.35, main);
+    roof.addColorStop(0.5, light);
+    roof.addColorStop(0.65, main);
+    roof.addColorStop(1, dark);
+    g.fillStyle = roof;
+    roundRect(g, -cw, cabinTop, cw * 2, cabinBot - cabinTop, 4); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 0.7;
+    roundRect(g, -cw, cabinTop, cw * 2, cabinBot - cabinTop, 4); g.stroke();
+
+    // ---- 挡风玻璃 ----
+    const glass = g.createLinearGradient(0, cabinTop - 8, 0, cabinTop + 2);
+    glass.addColorStop(0, 'rgba(24,36,52,.96)');
+    glass.addColorStop(0.45, 'rgba(120,170,200,.92)');
+    glass.addColorStop(1, 'rgba(30,46,64,.96)');
+    g.fillStyle = glass;
+    g.beginPath();
+    g.moveTo(0, cabinTop - 7.5);
+    g.quadraticCurveTo(cw * 0.72, cabinTop - 6, cw * 0.62, cabinTop + 1.5);
+    g.lineTo(-cw * 0.62, cabinTop + 1.5);
+    g.quadraticCurveTo(-cw * 0.72, cabinTop - 6, 0, cabinTop - 7.5);
+    g.closePath(); g.fill();
+    // 玻璃反光
+    g.save();
+    g.globalAlpha = 0.5;
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.moveTo(-cw * 0.42, cabinTop - 5.6);
+    g.lineTo(cw * 0.08, cabinTop + 0.8);
+    g.lineTo(cw * 0.3, cabinTop + 0.2);
+    g.lineTo(-cw * 0.2, cabinTop - 6.2);
+    g.closePath(); g.fill();
+    g.restore();
+
+    // ---- 后窗 ----
+    const rw = g.createLinearGradient(0, cabinBot - 1, 0, cabinBot + 8);
+    rw.addColorStop(0, 'rgba(30,46,64,.95)');
+    rw.addColorStop(0.6, 'rgba(90,130,160,.85)');
+    rw.addColorStop(1, 'rgba(22,34,48,.95)');
+    g.fillStyle = rw;
+    g.beginPath();
+    g.moveTo(-cw * 0.6, cabinBot - 1.5);
+    g.lineTo(cw * 0.6, cabinBot - 1.5);
+    g.quadraticCurveTo(cw * 0.66, cabinBot + 6, 0, cabinBot + 8);
+    g.quadraticCurveTo(-cw * 0.66, cabinBot + 6, -cw * 0.6, cabinBot - 1.5);
+    g.closePath(); g.fill();
+
+    // ---- 车顶天线 / 后视镜 ----
+    g.fillStyle = dark;
+    g.fillRect(-cw - 2.6, cabinTop + 1.5, 2.4, 3);   // 左镜
+    g.fillRect(cw + 0.2, cabinTop + 1.5, 2.4, 3);    // 右镜
+
+    // ---- 引擎盖细节 ----
+    if (B.scoop) {
+      g.fillStyle = 'rgba(0,0,0,.55)';
+      roundRect(g, -3.2, -L * 0.78, 6.4, 4.2, 1.4); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.12)';
+      g.fillRect(-3.2, -L * 0.78, 6.4, 0.8);
+      // 通风格栅
+      g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.5;
+      for (let i = 0; i < 3; i++) {
+        g.beginPath(); g.moveTo(-Wd * 0.7, -L * 0.5 + i * 1.6); g.lineTo(-Wd * 0.2, -L * 0.5 + i * 1.6); g.stroke();
+      }
+    }
+
+    // ---- 号码 ----
+    g.save();
+    g.fillStyle = 'rgba(255,255,255,.92)';
+    g.beginPath(); g.arc(0, -L * 0.6, 4.6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#14171c';
+    g.font = 'bold 5.6px "Arial Narrow", Arial, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(style.num || 0), 0, -L * 0.6 + 0.3);
+    g.restore();
+
+    // ---- 车灯 ----
+    g.fillStyle = 'rgba(255,250,225,.95)';
+    roundRect(g, -Wd * 0.86, -L * 0.99, 5.2, 2.8, 1.2); g.fill();
+    roundRect(g, Wd * 0.86 - 5.2, -L * 0.99, 5.2, 2.8, 1.2); g.fill();
+    g.fillStyle = 'rgba(255,60,50,.95)';
+    roundRect(g, -Wd * 0.88, L * 0.9, 5.4, 2.8, 1.2); g.fill();
+    roundRect(g, Wd * 0.88 - 5.4, L * 0.9, 5.4, 2.8, 1.2); g.fill();
+
+    // ---- 尾翼 ----
+    if (B.wing) {
+      g.fillStyle = '#1a1d22';
+      roundRect(g, -Wd - 1.4, L * 0.74, (Wd + 1.4) * 2, 4.2, 1.6); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.18)';
+      g.fillRect(-Wd - 1.4, L * 0.74, (Wd + 1.4) * 2, 1.1);
+      g.fillStyle = '#2b2f36';
+      g.fillRect(-Wd * 0.55, L * 0.68, 2, 6);
+      g.fillRect(Wd * 0.55 - 2, L * 0.68, 2, 6);
+    }
+
+    // ---- 货斗（皮卡）----
+    if (B.bed) {
+      g.fillStyle = 'rgba(0,0,0,.55)';
+      g.fillRect(-Wd + 1, -L * 0.02, Wd * 2 - 2, 1.6);
+    }
+    if (false)
+    if (B.bed) {
+      g.fillStyle = 'rgba(0,0,0,.45)';
+      roundRect(g, -Wd * 0.82, L * 0.2, Wd * 1.64, L * 0.72, 2); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.12)';
+      g.lineWidth = 0.7;
+      for (let i = 1; i < 4; i++) {
+        g.beginPath();
+        g.moveTo(-Wd * 0.82, L * 0.2 + (L * 0.72 / 4) * i);
+        g.lineTo(Wd * 0.82, L * 0.2 + (L * 0.72 / 4) * i);
+        g.stroke();
+      }
+    }
+
+    // ---- 轮拱阴影 + 轮胎（后画，露出车身外）----
+    function arch(x, y) {
+      g.fillStyle = 'rgba(0,0,0,.55)';
+      g.beginPath();
+      g.ellipse(x, y, 4.4, wl * 0.62, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    arch(-Wd + 1.5, B.axleF); arch(Wd - 1.5, B.axleF);
+    arch(-Wd + 1.5, B.axleR); arch(Wd - 1.5, B.axleR);
+    tire(-Wd - 2.6, B.axleF - wl / 2, wl);
+    tire(Wd - 4.4, B.axleF - wl / 2, wl);
+    tire(-Wd - 2.6, B.axleR - wl / 2, wl);
+    tire(Wd - 4.4, B.axleR - wl / 2, wl);
+
+    // ---- 侧窗（驾驶舱两侧的深色条）----
+    g.fillStyle = 'rgba(24,36,52,.85)';
+    roundRect(g, -cw - 0.6, cabinTop + 3, 2.2, (cabinBot - cabinTop) * 0.62, 1); g.fill();
+    roundRect(g, cw - 1.6, cabinTop + 3, 2.2, (cabinBot - cabinTop) * 0.62, 1); g.fill();
+
+    // ---- 车顶高光 ----
+    const top = g.createLinearGradient(-cw, cabinTop, cw, cabinBot);
+    top.addColorStop(0, 'rgba(255,255,255,.22)');
+    top.addColorStop(0.5, 'rgba(255,255,255,.02)');
+    top.addColorStop(1, 'rgba(255,255,255,.14)');
+    g.fillStyle = top;
+    roundRect(g, -cw, cabinTop, cw * 2, cabinBot - cabinTop, 4); g.fill();
+
+    return cv;
+  }
+
+  function getCarSprite(style) {
+    const key = style.name || (style.body + style.main);
+    if (!spriteCache.has(key)) spriteCache.set(key, buildCarSprite(style));
+    return spriteCache.get(key);
+  }
+
+  // 画一辆车（含投影、尾焰、刹车灯）
+  function car(ctx, x, y, angle, style, o = {}) {
+    const scale = o.scale || 1;
+    const sp = getCarSprite(style);
+    const w = sp.width / SS * scale;
+    const h = sp.height / SS * scale;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle + Math.PI / 2);
+
+    // 投影
+    const sh = getCarShadow();
+    const shW = w * 0.95, shH = h * 0.95;
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(sh, -shW / 2 + 3, -shH / 2 + 4, shW, shH);
+    ctx.restore();
+
+    // 尾焰
+    if (o.thrust > 0.05) {
+      const t = o.thrust;
+      const B = BODIES[style.body] || BODIES.sedan;
+      const fy = B.L * 0.95;
+      const fg = ctx.createLinearGradient(0, fy, 0, fy + 22 * t);
+      fg.addColorStop(0, 'rgba(255,240,190,.9)');
+      fg.addColorStop(0.4, 'rgba(255,150,60,.5)');
+      fg.addColorStop(1, 'rgba(255,80,30,0)');
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.moveTo(-4, fy); ctx.lineTo(4, fy); ctx.lineTo(0, fy + 22 * t);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // 刹车红光
+    if (o.braking) {
+      const B = BODIES[style.body] || BODIES.sedan;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const rg = ctx.createRadialGradient(0, B.L * 0.95, 0, 0, B.L * 0.95, 26);
+      rg.addColorStop(0, 'rgba(255,40,40,.5)');
+      rg.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(0, B.L * 0.95, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.drawImage(sp, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
+  const PICKUP_COLORS = {
+    rocket: ['#ff5c9c', '#ff2f8e'],
+    mine:   ['#ffcf5c', '#ff9b1f'],
+    turbo:  ['#5cf0ff', '#1fb6ff'],
+  };
+
+  function pickup(ctx, x, y, type, t) {
+    const c = PICKUP_COLORS[type] || PICKUP_COLORS.turbo;
+    const pulse = 0.75 + Math.sin(t * 4) * 0.25;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(t * 1.2);
+    ctx.shadowColor = c[1];
+    ctx.shadowBlur = 22 * pulse;
+    ctx.strokeStyle = c[0];
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const r = 13;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = c[1] + '44';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function mine(ctx, x, y, t) {
+    ctx.save();
+    ctx.translate(x, y);
+    const pulse = 0.6 + Math.sin(t * 8) * 0.4;
+    ctx.fillStyle = '#2a1c10';
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ffb340'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,120,40,' + pulse + ')';
+    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function rocket(ctx, x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.shadowColor = '#ff2f8e'; ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ffd0e6';
+    roundRect(ctx, -10, -3.5, 20, 7, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,120,200,.7)';
+    ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(18, 0); ctx.lineTo(10, 4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function explosion(ctx, x, y, r, alpha) {
+    if (alpha <= 0) return;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(255,255,220,' + alpha + ')');
+    g.addColorStop(0.35, 'rgba(255,150,60,' + alpha * 0.8 + ')');
+    g.addColorStop(1, 'rgba(255,40,90,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function skid(ctx, x, y, angle, alpha) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(0,0,0,' + alpha + ')';
+    ctx.fillRect(-11, -2, 4, 4);
+    ctx.fillRect(7, -2, 4, 4);
+    ctx.restore();
+  }
+
+  return { car, pickup, mine, rocket, explosion, skid, roundRect, getCarSprite };
+})();
+</script>
+<script>
+// drivers.js - 原作 14 名车手（名字取自 KRally.exe / data.pak 解包文本）
+// perk: 速度/加速/抓地 倍率，armor 减伤倍率，prize/xp 收益倍率，pickup 拾取范围倍率
+const DRIVERS = [
+  { name: 'JURIJ', main: '#2ad0ff', dark: '#0b4d68', light: '#a8f0ff', body: 'sport', num: 7,
+    traits: { aggr: 0.34, block: 0.46, loot: 0.55 }, bio: 'Challenge is all I need!', bioZh: '我只想要挑战！',
+    sponsor: 'NEONWORKS', perkText: '极速 +4%',
+    perk: { speed: 1.04, accel: 1.00, grip: 1.00, armor: 1.00, prize: 1.00, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'MARKO', main: '#ff3d8b', dark: '#6b1030', light: '#ffb3d0', body: 'muscle', num: 3,
+    traits: { aggr: 0.88, block: 0.50, loot: 0.38 }, bio: 'focused, hard working, no fun no jokes ex soldier.', bioZh: '专注、拼命、不讲笑话——前军人。',
+    sponsor: 'IRONCLAD', perkText: '抗撞 +28%，奖金 +5%',
+    perk: { speed: 1.00, accel: 1.02, grip: 1.00, armor: 1.28, prize: 1.05, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'DR.DRILL', main: '#ffb02e', dark: '#6a3f05', light: '#ffe3a8', body: 'sedan', num: 11,
+    traits: { aggr: 0.38, block: 0.92, loot: 0.42 }, bio: 'Precise, confident driving. Well done!', bioZh: '精准、自信的驾驶。干得漂亮！',
+    sponsor: 'PRECISION', perkText: '抓地 +9%',
+    perk: { speed: 1.00, accel: 1.00, grip: 1.09, armor: 1.05, prize: 1.00, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'RUSTY', main: '#c96a2e', dark: '#5a2c10', light: '#f0c090', body: 'truck', num: 44,
+    traits: { aggr: 0.62, block: 0.55, loot: 0.35 }, bio: 'I have a family!', bioZh: '我有一家人要养！',
+    sponsor: 'JUNKYARD', perkText: '抗撞 +35%，极速 -3%',
+    perk: { speed: 0.97, accel: 1.00, grip: 1.02, armor: 1.35, prize: 1.00, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'KIDDO', main: '#5fe06a', dark: '#1c5e23', light: '#c4ffca', body: 'compact', num: 8,
+    traits: { aggr: 0.30, block: 0.35, loot: 0.72 }, bio: "Let', bioZh: '来比赛吧！'s race!",
+    sponsor: 'TOYBOX', perkText: '道具 +30%，经验 +10%',
+    perk: { speed: 1.00, accel: 1.03, grip: 1.00, armor: 0.95, prize: 0.95, xp: 1.10, pickup: 1.30 } },
+
+  { name: 'THE VIKING', main: '#8b5cff', dark: '#2c1a6b', light: '#d8c6ff', body: 'muscle', num: 13,
+    traits: { aggr: 0.75, block: 0.60, loot: 0.30 }, bio: 'Show me what you have got!', bioZh: '让我看看你有什么本事！',
+    sponsor: 'VALHALLA', perkText: '抗撞 +15%，奖金 +5%',
+    perk: { speed: 1.00, accel: 1.00, grip: 1.00, armor: 1.15, prize: 1.05, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'EGGHEAD', main: '#f2e14c', dark: '#6b6108', light: '#fff8b8', body: 'compact', num: 21,
+    traits: { aggr: 0.22, block: 0.70, loot: 0.50 }, bio: 'That is no proper way to race!', bioZh: '这可不是比赛该有的样子！',
+    sponsor: 'TECHLAB', perkText: '抓地 +12%，经验 +10%',
+    perk: { speed: 0.99, accel: 1.00, grip: 1.12, armor: 1.05, prize: 1.00, xp: 1.10, pickup: 1.00 } },
+
+  { name: 'FIXER', main: '#9aa7b4', dark: '#3a444e', light: '#e2ecf4', body: 'wagon', num: 5,
+    traits: { aggr: 0.45, block: 0.62, loot: 0.66 }, bio: 'Good day for a race!', bioZh: '今天适合跑一场！',
+    sponsor: 'GREYMARKET', perkText: '奖金 +18%',
+    perk: { speed: 1.00, accel: 1.00, grip: 1.00, armor: 1.05, prize: 1.18, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'T.SHARQUE', main: '#22c4b8', dark: '#0a4a46', light: '#a8f4ef', body: 'sport', num: 9,
+    traits: { aggr: 0.55, block: 0.48, loot: 0.60 }, bio: 'Catch me if you can!', bioZh: '追得上我就来啊！',
+    sponsor: 'DEEPBLUE', perkText: '极速 +5%，道具 +5%',
+    perk: { speed: 1.05, accel: 1.00, grip: 0.99, armor: 1.00, prize: 1.00, xp: 1.00, pickup: 1.05 } },
+
+  { name: 'SWEETHART', main: '#ff8fc4', dark: '#6b2444', light: '#ffd6e8', body: 'compact', num: 2,
+    traits: { aggr: 0.28, block: 0.40, loot: 0.78 }, bio: 'You got lucky this time!', bioZh: '这次算你走运！',
+    sponsor: 'SUGARLINE', perkText: '道具 +35%，奖金 -5%',
+    perk: { speed: 0.98, accel: 1.00, grip: 1.02, armor: 0.95, prize: 0.95, xp: 1.05, pickup: 1.35 } },
+
+  { name: 'BOBBY D.', main: '#e04b4b', dark: '#5d1616', light: '#ffb0b0', body: 'sedan', num: 17,
+    traits: { aggr: 0.58, block: 0.55, loot: 0.45 }, bio: 'Better luck next time!', bioZh: '下次好运吧！',
+    sponsor: 'BIG D', perkText: '加速 +8%',
+    perk: { speed: 1.01, accel: 1.08, grip: 1.00, armor: 1.00, prize: 1.02, xp: 1.00, pickup: 1.00 } },
+
+  { name: 'THUGS', main: '#6b6b6b', dark: '#262626', light: '#b8b8b8', body: 'truck', num: 66,
+    traits: { aggr: 0.82, block: 0.45, loot: 0.25 }, bio: 'It is all about talent, you know!', bioZh: '这全靠天赋，你懂的！',
+    sponsor: 'SCRAPCREW', perkText: '抗撞 +30%，奖金 -10%',
+    perk: { speed: 1.00, accel: 1.00, grip: 0.98, armor: 1.30, prize: 0.90, xp: 1.00, pickup: 0.95 } },
+
+  { name: 'VULTAR', main: '#b14bff', dark: '#3d1260', light: '#e3c2ff', body: 'sport', num: 1,
+    traits: { aggr: 0.70, block: 0.65, loot: 0.40 }, bio: 'I expected more from someone like you!', bioZh: '我以为你能更强一点！',
+    sponsor: 'VULTURE', perkText: '极速 +6%，抓地 -3%',
+    perk: { speed: 1.06, accel: 1.02, grip: 0.97, armor: 0.95, prize: 1.00, xp: 1.05, pickup: 1.00 } },
+
+  { name: 'GUILY', main: '#3f7bff', dark: '#132a63', light: '#b9cfff', body: 'wagon', num: 27,
+    traits: { aggr: 0.40, block: 0.58, loot: 0.52 }, bio: 'See you at the finish line!', bioZh: '终点线见！',
+    sponsor: 'BLUELINE', perkText: '奖金 +10%，经验 +10%',
+    perk: { speed: 1.02, accel: 1.00, grip: 1.00, armor: 1.00, prize: 1.10, xp: 1.10, pickup: 1.00 } },
+];
+if (typeof window !== 'undefined') window.DRIVERS = DRIVERS;
+</script>
+<script>
+// portrait.js - 程序化车手头像（头盔 + 赛车服，非复用素材）
+const Portrait = (() => {
+  const cache = new Map();
+  const SS = 2;
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function build(d) {
+    const S = 96;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = S * SS;
+    const g = cv.getContext('2d');
+    g.scale(SS, SS);
+
+    // 背景：车队色氛围
+    const bg = g.createRadialGradient(S * 0.38, S * 0.3, 6, S * 0.5, S * 0.55, S * 0.72);
+    bg.addColorStop(0, d.light + '55');
+    bg.addColorStop(0.55, d.main + '33');
+    bg.addColorStop(1, '#070b12');
+    g.fillStyle = bg;
+    roundRect(g, 0, 0, S, S, 10); g.fill();
+
+    // 背景细斜纹
+    g.save();
+    g.beginPath(); roundRect(g, 0, 0, S, S, 10); g.clip();
+    g.globalAlpha = 0.07;
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = 6;
+    for (let i = -S; i < S * 2; i += 18) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + S, S); g.stroke();
+    }
+    g.restore();
+
+    const cx = S / 2;
+
+    // ---- 肩部 / 赛车服 ----
+    const suit = g.createLinearGradient(cx - 34, S, cx + 34, S - 40);
+    suit.addColorStop(0, '#101722');
+    suit.addColorStop(0.5, '#1c2734');
+    suit.addColorStop(1, '#0b1119');
+    g.fillStyle = suit;
+    g.beginPath();
+    g.moveTo(cx - 40, S);
+    g.quadraticCurveTo(cx - 34, S - 30, cx - 14, S - 38);
+    g.lineTo(cx + 14, S - 38);
+    g.quadraticCurveTo(cx + 34, S - 30, cx + 40, S);
+    g.closePath();
+    g.fill();
+
+    // 肩部条纹（车队色）
+    g.fillStyle = d.main;
+    g.beginPath();
+    g.moveTo(cx - 26, S);
+    g.quadraticCurveTo(cx - 22, S - 24, cx - 10, S - 33);
+    g.lineTo(cx - 4, S - 31);
+    g.quadraticCurveTo(cx - 16, S - 22, cx - 18, S);
+    g.closePath(); g.fill();
+    g.fillStyle = d.main;
+    g.beginPath();
+    g.moveTo(cx + 26, S);
+    g.quadraticCurveTo(cx + 22, S - 24, cx + 10, S - 33);
+    g.lineTo(cx + 4, S - 31);
+    g.quadraticCurveTo(cx + 16, S - 22, cx + 18, S);
+    g.closePath(); g.fill();
+
+    // 领口
+    g.fillStyle = '#0a0f16';
+    g.beginPath();
+    g.ellipse(cx, S - 34, 12, 6, 0, 0, Math.PI * 2);
+    g.fill();
+
+    // ---- 头盔 ----
+    const hy = S * 0.44, hw = 26, hh = 27;
+    const shell = g.createLinearGradient(cx - hw, hy - hh, cx + hw * 0.6, hy + hh);
+    shell.addColorStop(0, d.light);
+    shell.addColorStop(0.30, d.main);
+    shell.addColorStop(0.62, d.dark);
+    shell.addColorStop(1, '#0a0d13');
+
+    // 头盔主体
+    g.fillStyle = shell;
+    g.beginPath();
+    g.ellipse(cx, hy, hw, hh, 0, 0, Math.PI * 2);
+    g.fill();
+
+    // 盔壳高光
+    g.save();
+    g.beginPath(); g.ellipse(cx, hy, hw, hh, 0, 0, Math.PI * 2); g.clip();
+    const hl = g.createLinearGradient(cx - hw, hy - hh, cx, hy);
+    hl.addColorStop(0, 'rgba(255,255,255,.55)');
+    hl.addColorStop(0.45, 'rgba(255,255,255,.05)');
+    hl.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hl;
+    g.fillRect(cx - hw, hy - hh, hw * 2, hh * 2);
+
+    // 盔顶细条纹
+    g.globalAlpha = 0.5;
+    g.strokeStyle = d.light;
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(cx - 4, hy - hh + 2);
+    g.quadraticCurveTo(cx + 2, hy, cx + 4, hy + hh - 4);
+    g.stroke();
+    g.globalAlpha = 1;
+    g.restore();
+
+    // ---- 面罩（护目镜）----
+    const visor = g.createLinearGradient(cx - 18, hy - 12, cx + 18, hy + 6);
+    visor.addColorStop(0, '#0d1a26');
+    visor.addColorStop(0.35, '#3f7fa8');
+    visor.addColorStop(0.55, '#9fd8f2');
+    visor.addColorStop(0.75, '#2b5f80');
+    visor.addColorStop(1, '#0a1420');
+    g.fillStyle = visor;
+    g.beginPath();
+    g.moveTo(cx - 20, hy - 3);
+    g.quadraticCurveTo(cx - 16, hy - 15, cx + 2, hy - 15);
+    g.quadraticCurveTo(cx + 19, hy - 15, cx + 21, hy - 1);
+    g.quadraticCurveTo(cx + 14, hy + 11, cx - 2, hy + 11);
+    g.quadraticCurveTo(cx - 17, hy + 10, cx - 20, hy - 3);
+    g.closePath();
+    g.fill();
+    // 面罩反光
+    g.save();
+    g.beginPath();
+    g.moveTo(cx - 20, hy - 3);
+    g.quadraticCurveTo(cx - 16, hy - 15, cx + 2, hy - 15);
+    g.quadraticCurveTo(cx + 19, hy - 15, cx + 21, hy - 1);
+    g.quadraticCurveTo(cx + 14, hy + 11, cx - 2, hy + 11);
+    g.quadraticCurveTo(cx - 17, hy + 10, cx - 20, hy - 3);
+    g.closePath(); g.clip();
+    g.globalAlpha = 0.55;
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.moveTo(cx - 16, hy - 9);
+    g.lineTo(cx - 2, hy + 8);
+    g.lineTo(cx + 6, hy + 6);
+    g.lineTo(cx - 8, hy - 11);
+    g.closePath(); g.fill();
+    g.restore();
+
+    // 面罩边框
+    g.strokeStyle = 'rgba(0,0,0,.55)';
+    g.lineWidth = 1.6;
+    g.beginPath();
+    g.moveTo(cx - 20, hy - 3);
+    g.quadraticCurveTo(cx - 16, hy - 15, cx + 2, hy - 15);
+    g.quadraticCurveTo(cx + 19, hy - 15, cx + 21, hy - 1);
+    g.quadraticCurveTo(cx + 14, hy + 11, cx - 2, hy + 11);
+    g.quadraticCurveTo(cx - 17, hy + 10, cx - 20, hy - 3);
+    g.closePath();
+    g.stroke();
+
+    // 下巴护罩
+    g.fillStyle = d.dark;
+    g.beginPath();
+    g.moveTo(cx - 17, hy + 9);
+    g.quadraticCurveTo(cx, hy + 22, cx + 17, hy + 8);
+    g.quadraticCurveTo(cx + 8, hy + 24, cx - 8, hy + 24);
+    g.closePath(); g.fill();
+
+    // 侧面号码
+    g.fillStyle = 'rgba(255,255,255,.92)';
+    g.font = 'bold 11px "Arial Narrow", Arial, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(String(d.num), cx + 15, hy + 3);
+
+    // 盔顶通风口
+    g.fillStyle = 'rgba(0,0,0,.45)';
+    roundRect(g, cx - 8, hy - hh + 4, 16, 3.5, 1.6); g.fill();
+
+    return cv;
+  }
+
+  function get(d) {
+    if (!cache.has(d.name)) cache.set(d.name, build(d));
+    return cache.get(d.name);
+  }
+
+  return { get, build };
+})();
+if (typeof window !== 'undefined') window.Portrait = Portrait;
+
+</script>
+<script>
+// track.js - 程序化赛道（Catmull-Rom 闭合样条）
+class Track {
+  constructor(controlPoints, width, name) {
+    this.name = name || 'NEON HARBOR';
+    this.width = width;
+    this.control = controlPoints;
+    this.points = [];
+    this.build();
+  }
+
+  static catmull(p0, p1, p2, p3, t) {
+    const t2 = t * t, t3 = t2 * t;
+    return {
+      x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+      y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+    };
+  }
+
+  build() {
+    const cp = this.control, n = cp.length, STEP = 14;
+    const raw = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = cp[(i - 1 + n) % n], p1 = cp[i], p2 = cp[(i + 1) % n], p3 = cp[(i + 2) % n];
+      for (let j = 0; j < STEP; j++) raw.push(Track.catmull(p0, p1, p2, p3, j / STEP));
+    }
+    // 切线 / 法线 / 弧长
+    let s = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const a = raw[(i - 1 + raw.length) % raw.length], b = raw[(i + 1) % raw.length];
+      const tx = b.x - a.x, ty = b.y - a.y;
+      const len = Math.hypot(tx, ty) || 1;
+      const p = raw[i];
+      if (i > 0) s += Math.hypot(p.x - raw[i - 1].x, p.y - raw[i - 1].y);
+      this.points.push({
+        x: p.x, y: p.y,
+        tx: tx / len, ty: ty / len,
+        nx: -ty / len, ny: tx / len,
+        s,
+      });
+    }
+    this.length = s + Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y);
+  }
+
+  at(s) {
+    const L = this.length;
+    s = ((s % L) + L) % L;
+    const pts = this.points;
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid].s < s) lo = mid + 1; else hi = mid;
+    }
+    return pts[lo];
+  }
+
+  // 找最近的路面点（分段粗查 + 局部细查）
+  nearest(x, y) {
+    const pts = this.points;
+    let best = null, bestD = Infinity;
+    for (let i = 0; i < pts.length; i += 4) {
+      const p = pts[i];
+      const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    const from = (best - 6 + pts.length) % pts.length;
+    for (let k = 0; k < 13; k++) {
+      const i = (from + k) % pts.length;
+      const p = pts[i];
+      const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    const p = pts[best];
+    const dx = x - p.x, dy = y - p.y;
+    const lateral = dx * p.nx + dy * p.ny;
+    return { i: best, s: p.s, lateral, dist: Math.sqrt(bestD), point: p };
+  }
+
+  startPose() {
+    const p = this.points[0];
+    return { x: p.x, y: p.y, angle: Math.atan2(p.ty, p.tx) };
+  }
+}
+
+// 赛道定义（世界坐标）
+const TRACKS = [
+  { name: 'NEON HARBOR', zh: '霓虹港', theme: 0, width: 168, points: [
+      { x: 420, y: 300 }, { x: 900, y: 230 }, { x: 1420, y: 300 }, { x: 1780, y: 520 },
+      { x: 1830, y: 860 }, { x: 1560, y: 1060 }, { x: 1180, y: 980 }, { x: 980, y: 1180 },
+      { x: 700, y: 1260 }, { x: 380, y: 1100 }, { x: 260, y: 780 }, { x: 330, y: 500 } ] },
+  { name: 'MIDNIGHT SPINE', zh: '午夜山脊', theme: 1, width: 156, points: [
+      { x: 360, y: 980 }, { x: 300, y: 620 }, { x: 560, y: 360 }, { x: 980, y: 300 },
+      { x: 1240, y: 520 }, { x: 1180, y: 800 }, { x: 1420, y: 980 }, { x: 1760, y: 900 },
+      { x: 1840, y: 600 }, { x: 1600, y: 420 }, { x: 1560, y: 780 }, { x: 1180, y: 1240 },
+      { x: 720, y: 1220 } ] },
+  { name: 'FROZEN PASS', zh: '冰封山口', theme: 2, width: 150, points: [
+      { x: 300, y: 300 }, { x: 820, y: 240 }, { x: 1300, y: 320 }, { x: 1620, y: 620 },
+      { x: 1500, y: 1000 }, { x: 1080, y: 1080 }, { x: 760, y: 900 }, { x: 560, y: 1150 },
+      { x: 280, y: 950 }, { x: 220, y: 620 } ] },
+  { name: 'DESERT RIDGE', zh: '荒漠山脊', theme: 3, width: 174, points: [
+      { x: 400, y: 260 }, { x: 1040, y: 200 }, { x: 1560, y: 380 }, { x: 1840, y: 760 },
+      { x: 1680, y: 1120 }, { x: 1240, y: 1220 }, { x: 980, y: 1000 }, { x: 1180, y: 760 },
+      { x: 860, y: 640 }, { x: 520, y: 820 }, { x: 300, y: 620 } ] },
+  { name: 'JUNGLE RUN', zh: '丛林赛道', theme: 4, width: 146, points: [
+      { x: 520, y: 220 }, { x: 1080, y: 260 }, { x: 1480, y: 520 }, { x: 1420, y: 900 },
+      { x: 1120, y: 1080 }, { x: 760, y: 980 }, { x: 620, y: 1220 }, { x: 320, y: 1100 },
+      { x: 260, y: 760 }, { x: 460, y: 560 }, { x: 780, y: 640 } ] },
+  { name: 'DOCKYARD 7', zh: '七号码头', theme: 5, width: 162, points: [
+      { x: 360, y: 900 }, { x: 340, y: 480 }, { x: 700, y: 260 }, { x: 1180, y: 300 },
+      { x: 1500, y: 520 }, { x: 1740, y: 820 }, { x: 1520, y: 1120 }, { x: 1120, y: 1180 },
+      { x: 860, y: 980 }, { x: 620, y: 1120 } ] },
+  { name: 'RED CANYON', zh: '赤岩峡谷', theme: 6, width: 160, points: [
+      { x: 380, y: 420 }, { x: 760, y: 240 }, { x: 1240, y: 260 }, { x: 1660, y: 460 },
+      { x: 1820, y: 820 }, { x: 1520, y: 1080 }, { x: 1120, y: 1000 }, { x: 900, y: 1220 },
+      { x: 560, y: 1120 }, { x: 300, y: 820 } ] },
+  { name: 'AUTUMN LOOP', zh: '秋日环道', theme: 7, width: 152, points: [
+      { x: 520, y: 300 }, { x: 1020, y: 220 }, { x: 1500, y: 380 }, { x: 1620, y: 760 },
+      { x: 1340, y: 1020 }, { x: 980, y: 880 }, { x: 760, y: 1080 }, { x: 420, y: 980 },
+      { x: 260, y: 640 }, { x: 340, y: 420 } ] },
+  { name: 'SALT FLATS', zh: '盐滩', theme: 3, width: 196, points: [
+      { x: 340, y: 700 }, { x: 420, y: 360 }, { x: 880, y: 220 }, { x: 1420, y: 260 },
+      { x: 1800, y: 520 }, { x: 1820, y: 940 }, { x: 1420, y: 1160 }, { x: 900, y: 1200 },
+      { x: 500, y: 1020 } ] },
+];
+</script>
+<script>
+// terrain.js - 写实风格赛道地图（一次性烘焙）
+const Terrain = (() => {
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // 噪点贴图（用于沥青/草地/砂石）
+  function noisePattern(g, size, alpha, color) {
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const cg = c.getContext('2d');
+    const img = cg.createImageData(size, size);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 128 + (Math.random() - 0.5) * 120;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    cg.putImageData(img, 0, 0);
+    const pat = g.createPattern(c, 'repeat');
+    return { pat, alpha, color };
+  }
+
+  function fillNoise(g, pat, x, y, w, h, alpha) {
+    g.save();
+    g.globalAlpha = alpha;
+    g.globalCompositeOperation = 'overlay';
+    g.fillStyle = pat;
+    g.fillRect(x, y, w, h);
+    g.restore();
+  }
+
+  const THEMES = [
+    { // 0 夜间海港
+      grass: '#2c3a26', grassDark: '#1e2a1a', grassLight: '#3a4a30',
+      dirt: '#4a3d2c', asphalt: '#33363c', asphaltDark: '#26282d', asphaltLight: '#41454d',
+      curbA: '#b6332f', curbB: '#d9d5cc', line: '#e8e4d8',
+      treeA: '#2f4a2a', treeB: '#3d6034', treeC: '#1d3018',
+      rock: '#5b5b58', rockLight: '#7a7a74', bldg: '#3b3d42', bldgRoof: '#4f5257',
+      lamp: 'rgba(255,214,150,0.55)', rim: '#c8ccd2',
+    },
+    { // 1 荒漠夜路
+      grass: '#4a3f2e', grassDark: '#3a3122', grassLight: '#5a4c38',
+      dirt: '#6a583f', asphalt: '#3a3b3e', asphaltDark: '#2b2c2f', asphaltLight: '#494a4e',
+      curbA: '#c07a2a', curbB: '#ddd6c4', line: '#eee6d2',
+      treeA: '#4a5a34', treeB: '#5c6e40', treeC: '#334024',
+      rock: '#6b6157', rockLight: '#8c8275', bldg: '#4a4136', bldgRoof: '#5e5346',
+      lamp: 'rgba(255,190,120,0.5)', rim: '#d8cfc0',
+    },
+    { // 2 雪山
+      grass: '#c9d4dc', grassDark: '#a8b6c2', grassLight: '#e2ebf2',
+      dirt: '#8f9aa3', asphalt: '#3c4149', asphaltDark: '#2e323a', asphaltLight: '#4a5058',
+      curbA: '#3b6ea8', curbB: '#f2f6fa', line: '#ffffff',
+      treeA: '#2c4a3c', treeB: '#3a5f4c', treeC: '#1e332a',
+      rock: '#8b939b', rockLight: '#b4bcc4', bldg: '#4a5560', bldgRoof: '#5f6c78',
+      lamp: 'rgba(210,230,255,0.55)', rim: '#e8eef4',
+    },
+    { // 3 沙漠
+      grass: '#b09163', grassDark: '#9c7f54', grassLight: '#c4a878',
+      dirt: '#8d7148', asphalt: '#43413c', asphaltDark: '#33312d', asphaltLight: '#53504a',
+      curbA: '#c2552e', curbB: '#efe3c8', line: '#f6efd8',
+      treeA: '#5c6b32', treeB: '#728040', treeC: '#40491f',
+      rock: '#8a7a62', rockLight: '#ab9a7c', bldg: '#5a4f3e', bldgRoof: '#6f6250',
+      lamp: 'rgba(255,200,120,0.45)', rim: '#e6d9bf',
+    },
+    { // 4 丛林
+      grass: '#25472a', grassDark: '#193520', grassLight: '#2f5c34',
+      dirt: '#4a3a24', asphalt: '#2f3334', asphaltDark: '#23262a', asphaltLight: '#3c4142',
+      curbA: '#c8a12e', curbB: '#e8e2c8', line: '#e4e2ce',
+      treeA: '#1f4a26', treeB: '#2c6533', treeC: '#143019',
+      rock: '#4f5a4a', rockLight: '#6b7763', bldg: '#3a4234', bldgRoof: '#4d5645',
+      lamp: 'rgba(200,255,170,0.35)', rim: '#cfe0c4',
+    },
+    { // 5 集装箱码头
+      grass: '#3a3a34', grassDark: '#2c2c27', grassLight: '#4a4a42',
+      dirt: '#5a5145', asphalt: '#3f4247', asphaltDark: '#303338', asphaltLight: '#4e5258',
+      curbA: '#d8a021', curbB: '#d5d2c8', line: '#efeade',
+      treeA: '#3a4432', treeB: '#4c5940', treeC: '#262d21',
+      rock: '#5f6259', rockLight: '#7f8378', bldg: '#4a4d52', bldgRoof: '#5f6469',
+      lamp: 'rgba(255,230,160,0.5)', rim: '#d6dadd',
+    },
+    { // 6 红岩峡谷
+      grass: '#7a3b2a', grassDark: '#5e2c20', grassLight: '#9a4d36',
+      dirt: '#8a4a2e', asphalt: '#3d3a37', asphaltDark: '#2e2c29', asphaltLight: '#4b4744',
+      curbA: '#d9541f', curbB: '#f0e0c8', line: '#f6ead4',
+      treeA: '#4a5230', treeB: '#5e6a3a', treeC: '#333b20',
+      rock: '#8e4d33', rockLight: '#b06a48', bldg: '#5a4034', bldgRoof: '#70513f',
+      lamp: 'rgba(255,170,90,0.5)', rim: '#e8cdb4',
+    },
+    { // 7 秋日林道
+      grass: '#4a3a1c', grassDark: '#392c14', grassLight: '#5e4a24',
+      dirt: '#6a5228', asphalt: '#37373a', asphaltDark: '#29292c', asphaltLight: '#454548',
+      curbA: '#c86a1e', curbB: '#e8dcbc', line: '#f4e8c8',
+      treeA: '#8a5a1e', treeB: '#c07a24', treeC: '#5e3c12',
+      rock: '#6a5a44', rockLight: '#8a765a', bldg: '#4a3c28', bldgRoof: '#5e4c34',
+      lamp: 'rgba(255,190,110,0.5)', rim: '#e6d6b8',
+    },
+  ];
+
+  function build(track, themeIdx) {
+    const T = THEMES[themeIdx % THEMES.length];
+    const rnd = mulberry32(20240117 + themeIdx * 3157);
+
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const p of track.points) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+    const pad = 820;
+    const x0 = Math.floor(minX - pad), y0 = Math.floor(minY - pad);
+    const w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
+
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    g.translate(-x0, -y0);
+
+    const W = track.width;
+    const pts = track.points;
+
+    // ---------------- 地面 ----------------
+    g.fillStyle = T.grass;
+    g.fillRect(x0, y0, w, h);
+
+    // 细颗粒底纹
+    const grassPat = noisePattern(g, 192, 1, '#fff');
+    fillNoise(g, grassPat.pat, x0, y0, w, h, 0.20);
+
+    // 柔和色斑精灵（避免大量 radialGradient 拖慢烘焙）
+    function rgba(hex, a) {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    function makeBlobSprite(hex, innerA, midA) {
+      const R = 96;
+      const c = document.createElement('canvas');
+      c.width = c.height = R * 2;
+      const cg = c.getContext('2d');
+      const grd = cg.createRadialGradient(R, R, R * 0.05, R, R, R);
+      grd.addColorStop(0, rgba(hex, innerA));
+      grd.addColorStop(0.45, rgba(hex, midA));
+      grd.addColorStop(1, rgba(hex, 0));
+      cg.fillStyle = grd;
+      cg.beginPath(); cg.arc(R, R, R, 0, Math.PI * 2); cg.fill();
+      return c;
+    }
+    const blobDark = makeBlobSprite(T.grassDark, 0.85, 0.38);
+    const blobLight = makeBlobSprite(T.grassLight, 0.85, 0.38);
+
+    function stamp(sprite, cx, cy, r, alpha) {
+      g.save();
+      g.globalAlpha = alpha;
+      g.drawImage(sprite, cx - r, cy - r, r * 2, r * 2);
+      g.restore();
+    }
+
+    // 大尺度地形起伏（很淡）
+    for (let i = 0; i < 90; i++) {
+      const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
+      stamp(rnd() < 0.5 ? blobDark : blobLight, cx, cy, 240 + rnd() * 460, 0.12 + rnd() * 0.10);
+    }
+    // 中尺度斑驳（细节层次）
+    for (let i = 0; i < 1400; i++) {
+      const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
+      stamp(rnd() < 0.5 ? blobDark : blobLight, cx, cy, 14 + rnd() * 70, 0.10 + rnd() * 0.13);
+    }
+    // 泥土斑（边缘不规则）
+    for (let i = 0; i < 110; i++) {
+      const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
+      const r = 30 + rnd() * 110;
+      g.save();
+      g.globalAlpha = 0.10 + rnd() * 0.10;
+      g.translate(cx, cy); g.rotate(rnd() * Math.PI);
+      g.fillStyle = T.dirt;
+      g.beginPath();
+      const n = 9 + ((rnd() * 5) | 0);
+      for (let k = 0; k < n; k++) {
+        const a = (k / n) * Math.PI * 2;
+        const rr = r * (0.6 + rnd() * 0.55);
+        const px = Math.cos(a) * rr, py = Math.sin(a) * rr * (0.5 + rnd() * 0.4);
+        if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.closePath(); g.fill();
+      g.restore();
+    }
+    // 草簇（成片的明暗块，近看有层次）
+    for (let i = 0; i < 520; i++) {
+      const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
+      stamp(rnd() < 0.6 ? blobLight : blobDark, cx, cy, 22 + rnd() * 55, 0.10 + rnd() * 0.12);
+    }
+
+    // 草丛（方向、明度、长度都有变化）
+    g.save();
+    g.lineCap = 'round';
+    for (let i = 0; i < 9000; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      const len = 1.6 + rnd() * 4.5;
+      const tone = rnd();
+      g.strokeStyle = tone < 0.33 ? 'rgba(88,120,64,.42)'
+                    : tone < 0.66 ? 'rgba(52,76,40,.42)'
+                    : 'rgba(126,156,92,.30)';
+      g.lineWidth = 0.6 + rnd() * 0.8;
+      const lean = (rnd() - 0.5) * 0.9;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.quadraticCurveTo(x + lean * len, y - len * 0.6, x + lean * len * 1.6, y - len);
+      g.stroke();
+    }
+    g.restore();
+    // 碎石 / 土粒
+    for (let i = 0; i < 2400; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(132,124,108,.30)' : 'rgba(58,56,48,.30)';
+      const r = 0.6 + rnd() * 2.0;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    // 极细噪点（近看有颗粒感）
+    for (let i = 0; i < 6000; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
+      g.fillRect(x, y, 1, 1);
+    }
+    // 大块云影（压出层次）
+    g.save();
+    g.globalAlpha = 0.12;
+    for (let i = 0; i < 26; i++) {
+      const cx = x0 + rnd() * w, cy = y0 + rnd() * h;
+      g.save();
+      g.translate(cx, cy);
+      g.scale(1, 0.55 + rnd() * 0.4);
+      g.fillStyle = 'rgba(10,14,8,.5)';
+      g.beginPath(); g.arc(0, 0, 200 + rnd() * 420, 0, Math.PI * 2); g.fill();
+      g.restore();
+    }
+    g.restore();
+
+    // ---------------- 路面 ----------------
+    function strokePath(width, color, dx, dy) {
+      g.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        if (i === 0) g.moveTo(p.x + dx, p.y + dy); else g.lineTo(p.x + dx, p.y + dy);
+      }
+      g.closePath();
+      g.lineWidth = width; g.strokeStyle = color;
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      g.stroke();
+    }
+
+    // 路基环境光遮蔽（草被压暗）
+    strokePath(W + 58, 'rgba(20,24,16,.45)', 0, 12);
+    strokePath(W + 34, 'rgba(16,20,12,.55)', 0, 6);
+    // 路肩斜坡
+    strokePath(W + 18, '#4c4436', 0, 0);
+
+    // 沥青
+    strokePath(W, T.asphalt, 0, 0);
+    const asphaltPat = noisePattern(g, 96, 1, '#fff');
+    g.save();
+    g.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (i === 0) g.moveTo(p.x, p.y); else g.lineTo(p.x, p.y);
+    }
+    g.closePath();
+    g.lineWidth = W; g.strokeStyle = T.asphalt; g.stroke();
+    g.globalAlpha = 0.3;
+    g.lineWidth = W;
+    g.strokeStyle = asphaltPat.pat;
+    g.stroke();
+    g.restore();
+
+    // 车轮磨痕（每条车道两条）
+    for (const laneFrac of [-0.55, -0.18, 0.18, 0.55]) {
+      const lane = W * laneFrac * 0.5;
+      g.save();
+      g.globalAlpha = 0.22;
+      g.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const x = p.x + p.nx * lane, y = p.y + p.ny * lane;
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath();
+      g.lineWidth = 13; g.strokeStyle = '#1a1c20'; g.stroke();
+      g.restore();
+    }
+
+    // 油渍 / 修补块
+    for (let i = 0; i < 220; i++) {
+      const p = pts[(rnd() * pts.length) | 0];
+      const off = (rnd() - 0.5) * W * 0.92;
+      const x = p.x + p.nx * off, y = p.y + p.ny * off;
+      const r = 6 + rnd() * 30;
+      g.save();
+      if (rnd() < 0.45) {
+        g.globalAlpha = 0.25 + rnd() * 0.2;
+        g.fillStyle = '#141518';
+      } else {
+        g.globalAlpha = 0.10 + rnd() * 0.12;
+        g.fillStyle = '#6a6d74';
+      }
+      g.beginPath();
+      g.ellipse(x, y, r, r * (0.35 + rnd() * 0.5), rnd() * 3, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    // 裂缝
+    g.save();
+    g.strokeStyle = 'rgba(15,16,18,.5)';
+    for (let i = 0; i < 140; i++) {
+      const p = pts[(rnd() * pts.length) | 0];
+      const off = (rnd() - 0.5) * W * 0.9;
+      let x = p.x + p.nx * off, y = p.y + p.ny * off;
+      g.lineWidth = 0.7 + rnd();
+      g.beginPath(); g.moveTo(x, y);
+      let a = rnd() * Math.PI * 2;
+      for (let k = 0; k < 4 + rnd() * 5; k++) {
+        a += (rnd() - 0.5) * 1.2;
+        x += Math.cos(a) * (3 + rnd() * 7);
+        y += Math.sin(a) * (3 + rnd() * 7);
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    g.restore();
+
+    // ---- 修补块（沥青补丁，不规则、低对比）----
+    for (let i = 0; i < 70; i++) {
+      const p = pts[(rnd() * pts.length) | 0];
+      const off = (rnd() - 0.5) * W * 0.75;
+      const x = p.x + p.nx * off, y = p.y + p.ny * off;
+      const rx = 10 + rnd() * 26, ry = 8 + rnd() * 20;
+      g.save();
+      g.translate(x, y);
+      g.rotate(Math.atan2(p.ty, p.tx) + (rnd() - 0.5) * 0.35);
+      g.globalAlpha = 0.22 + rnd() * 0.16;
+      g.fillStyle = rnd() < 0.5 ? '#232529' : '#43474e';
+      const n = 7 + ((rnd() * 4) | 0);
+      g.beginPath();
+      for (let k = 0; k < n; k++) {
+        const a = (k / n) * Math.PI * 2;
+        const rr = 0.72 + rnd() * 0.4;
+        const px = Math.cos(a) * rx * rr, py = Math.sin(a) * ry * rr;
+        if (k === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.closePath(); g.fill();
+      g.globalAlpha = 0.18;
+      g.strokeStyle = '#101215';
+      g.lineWidth = 1;
+      g.stroke();
+      g.restore();
+    }
+
+    // ---- 沥青接缝（横向细线）----
+    g.save();
+    g.strokeStyle = 'rgba(12,13,15,.55)';
+    for (let s = 0; s < track.length; s += 90 + rnd() * 70) {
+      const p = track.at(s);
+      const a = Math.atan2(p.ty, p.tx) + Math.PI / 2;
+      g.lineWidth = 1.2 + rnd();
+      g.beginPath();
+      g.moveTo(p.x - Math.cos(a) * W / 2, p.y - Math.sin(a) * W / 2);
+      g.lineTo(p.x + Math.cos(a) * W / 2, p.y + Math.sin(a) * W / 2);
+      g.stroke();
+    }
+    g.restore();
+
+    // ---- 湿痕 / 反光（沿行车线）----
+    g.save();
+    g.globalCompositeOperation = 'screen';
+    for (let i = 0; i < 40; i++) {
+      const s = rnd() * track.length;
+      const p = track.at(s);
+      const off = (rnd() - 0.5) * W * 0.7;
+      const len = 40 + rnd() * 130;
+      const grd = g.createLinearGradient(p.x, p.y, p.x + p.tx * len, p.y + p.ty * len);
+      grd.addColorStop(0, 'rgba(150,180,210,0)');
+      grd.addColorStop(0.5, 'rgba(150,180,210,.07)');
+      grd.addColorStop(1, 'rgba(150,180,210,0)');
+      g.fillStyle = grd;
+      g.save();
+      g.translate(p.x + p.nx * off, p.y + p.ny * off);
+      g.rotate(Math.atan2(p.ty, p.tx));
+      g.fillRect(0, -8 - rnd() * 8, len, 16 + rnd() * 16);
+      g.restore();
+    }
+    g.restore();
+
+    // ---- 路肩碎石 ----
+    for (let i = 0; i < 2600; i++) {
+      const s = rnd() * track.length;
+      const p = track.at(s);
+      const side = rnd() < 0.5 ? -1 : 1;
+      const off = (W / 2 + 8 + rnd() * 26) * side;
+      const x = p.x + p.nx * off + (rnd() - 0.5) * 4;
+      const y = p.y + p.ny * off + (rnd() - 0.5) * 4;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(120,116,104,.5)' : 'rgba(70,68,60,.5)';
+      g.fillRect(x, y, 1 + rnd() * 2, 1 + rnd() * 2);
+    }
+
+    // 边线（白实线，带磨损）
+    for (const side of [-1, 1]) {
+      g.save();
+      g.globalAlpha = 0.9;
+      g.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const x = p.x + p.nx * (W / 2 - 6) * side;
+        const y = p.y + p.ny * (W / 2 - 6) * side;
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.closePath();
+      g.lineWidth = 3.5; g.strokeStyle = T.line; g.stroke();
+      // 磨损缺口
+      g.globalCompositeOperation = 'destination-out';
+      for (let k = 0; k < 160; k++) {
+        const s = rnd() * track.length;
+        const pp = track.at(s);
+        g.beginPath();
+        g.arc(pp.x + pp.nx * (W / 2 - 6) * side, pp.y + pp.ny * (W / 2 - 6) * side, 1 + rnd() * 3, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.restore();
+    }
+    // 中线虚线
+    g.save();
+    g.globalAlpha = 0.55;
+    g.setLineDash([26, 34]);
+    g.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (i === 0) g.moveTo(p.x, p.y); else g.lineTo(p.x, p.y);
+    }
+    g.closePath();
+    g.lineWidth = 3; g.strokeStyle = T.line; g.stroke();
+    g.setLineDash([]);
+    g.restore();
+
+    // 路肩（带阴影的立体块）
+    const curbStep = 24;
+    for (const side of [-1, 1]) {
+      for (let s = 0; s < track.length; s += curbStep) {
+        const p = track.at(s);
+        const idx = Math.floor(s / curbStep);
+        const dx = p.x + p.nx * (W / 2 + 6) * side;
+        const dy = p.y + p.ny * (W / 2 + 6) * side;
+        g.save();
+        g.translate(dx, dy);
+        g.rotate(Math.atan2(p.ty, p.tx));
+        // 侧面阴影
+        g.fillStyle = 'rgba(0,0,0,.35)';
+        g.fillRect(-curbStep / 2, -2, curbStep, 10);
+        // 顶面
+        g.fillStyle = (idx % 2) ? T.curbA : T.curbB;
+        g.fillRect(-curbStep / 2, -6, curbStep, 9);
+        // 高光
+        g.fillStyle = 'rgba(255,255,255,.18)';
+        g.fillRect(-curbStep / 2, -6, curbStep, 2.2);
+        g.restore();
+      }
+    }
+
+    // 起跑线
+    const s0 = pts[0];
+    g.save();
+    g.translate(s0.x, s0.y);
+    g.rotate(Math.atan2(s0.ty, s0.tx));
+    for (let i = 0; i < 12; i++) {
+      for (let j = 0; j < 2; j++) {
+        g.fillStyle = ((i + j) % 2) ? '#f2f6fa' : '#161a20';
+        g.fillRect(-8 + j * 8, -W / 2 + i * (W / 12), 8, W / 12);
+      }
+    }
+    g.restore();
+
+    // ---------------- 场景物 ----------------
+    const roadDist = (x, y) => Math.abs(track.nearest(x, y).lateral);
+
+    // ---- 预渲染精灵（避免逐物体 filter/blur，烘焙才够快）----
+    function makeShadowSprite(r) {
+      const c = document.createElement('canvas');
+      c.width = c.height = r * 2;
+      const cg = c.getContext('2d');
+      const grd = cg.createRadialGradient(r, r, 0, r, r, r);
+      grd.addColorStop(0, 'rgba(0,0,0,.55)');
+      grd.addColorStop(0.55, 'rgba(0,0,0,.28)');
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      cg.fillStyle = grd;
+      cg.beginPath(); cg.arc(r, r, r, 0, Math.PI * 2); cg.fill();
+      return c;
+    }
+
+    function makeTreeSprite(seed, conifer) {
+      const R = 34;
+      const c = document.createElement('canvas');
+      c.width = c.height = R * 2;
+      const cg = c.getContext('2d');
+      const rr = mulberry32(seed);
+
+      if (conifer) {
+        // 针叶树：三层锥形叶团
+        const layers = 3;
+        for (let L = 0; L < layers; L++) {
+          const w = R * (0.34 + L * 0.22);
+          const y = R - 4 + L * R * 0.36;
+          const grd = cg.createRadialGradient(R - w * 0.3, y - R * 0.25, w * 0.15, R, y, w);
+          grd.addColorStop(0, T.treeB);
+          grd.addColorStop(0.6, T.treeA);
+          grd.addColorStop(1, T.treeC);
+          cg.fillStyle = grd;
+          cg.beginPath();
+          cg.moveTo(R, y - R * 0.5);
+          cg.lineTo(R + w, y);
+          cg.lineTo(R - w, y);
+          cg.closePath(); cg.fill();
+        }
+        cg.fillStyle = 'rgba(0,0,0,.35)';
+        cg.fillRect(R - 1.6, R, 3.2, R * 0.45);
+        return c;
+      }
+
+      // 阔叶树：6-10 个叶团叠出体积
+      const lobes = 6 + ((rr() * 5) | 0);
+      for (let i = 0; i < lobes; i++) {
+        const a = (i / lobes) * Math.PI * 2 + rr() * 0.6;
+        const d = R * (0.10 + rr() * 0.42);
+        const px = R + Math.cos(a) * d, py = R + Math.sin(a) * d * 0.92;
+        const rad = R * (0.26 + rr() * 0.18);
+        const grd = cg.createRadialGradient(px - rad * 0.35, py - rad * 0.4, rad * 0.08, px, py, rad);
+        const pick = rr();
+        const base = pick < 0.34 ? T.treeB : pick < 0.75 ? T.treeA : T.treeC;
+        grd.addColorStop(0, base);
+        grd.addColorStop(0.62, pick < 0.5 ? T.treeA : T.treeC);
+        grd.addColorStop(1, 'rgba(0,0,0,.55)');
+        cg.fillStyle = grd;
+        cg.beginPath();
+        cg.arc(px, py, rad, 0, Math.PI * 2);
+        cg.fill();
+      }
+      // 叶面高光碎点
+      for (let i = 0; i < 40; i++) {
+        const a = rr() * Math.PI * 2, d = rr() * R * 0.6;
+        cg.fillStyle = 'rgba(200,235,160,' + (0.10 + rr() * 0.26).toFixed(2) + ')';
+        cg.beginPath();
+        cg.ellipse(R + Math.cos(a) * d, R + Math.sin(a) * d * 0.9, 0.8 + rr() * 1.5, 0.5 + rr() * 0.9, rr() * 3, 0, Math.PI * 2);
+        cg.fill();
+      }
+      // 中心阴影（增加层次）
+      const cg2 = cg.createRadialGradient(R, R, R * 0.1, R, R, R * 0.8);
+      cg2.addColorStop(0, 'rgba(0,0,0,0)');
+      cg2.addColorStop(1, 'rgba(0,0,0,.28)');
+      cg.fillStyle = cg2;
+      cg.beginPath(); cg.arc(R, R, R * 0.8, 0, Math.PI * 2); cg.fill();
+      return c;
+    }
+
+    function makeRockSprite(seed) {
+      const R = 20;
+      const c = document.createElement('canvas');
+      c.width = c.height = R * 2;
+      const cg = c.getContext('2d');
+      const rr = mulberry32(seed);
+      const n = 6;
+      const verts = [];
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + rr() * 0.3;
+        const r = R * (0.5 + rr() * 0.38);
+        verts.push([R + Math.cos(a) * r, R + Math.sin(a) * r * 0.9]);
+      }
+      const grd = cg.createLinearGradient(0, 0, R * 2, R * 2);
+      grd.addColorStop(0, T.rockLight);
+      grd.addColorStop(0.55, T.rock);
+      grd.addColorStop(1, '#1a1a18');
+      cg.fillStyle = grd;
+      cg.beginPath();
+      verts.forEach((v, i) => i ? cg.lineTo(v[0], v[1]) : cg.moveTo(v[0], v[1]));
+      cg.closePath(); cg.fill();
+      // 受光面
+      cg.globalAlpha = 0.5;
+      cg.fillStyle = T.rockLight;
+      cg.beginPath();
+      cg.moveTo(verts[0][0], verts[0][1]);
+      cg.lineTo(verts[1][0], verts[1][1]);
+      cg.lineTo(R * 0.9, R * 0.9);
+      cg.closePath(); cg.fill();
+      return c;
+    }
+
+    const shadowSprite = makeShadowSprite(32);
+    const treeSprites = [makeTreeSprite(1), makeTreeSprite(2.2), makeTreeSprite(4.1), makeTreeSprite(6.3)];
+    const coniferSprite = makeTreeSprite(9.1, true);
+    const rockSprites = [makeRockSprite(7), makeRockSprite(13)];
+
+    function blob(sprite, x, y, scale, alpha) {
+      const s = sprite.width * scale;
+      g.save();
+      g.globalAlpha = alpha;
+      g.drawImage(sprite, x - s / 2, y - s / 2, s, s);
+      g.restore();
+    }
+
+    // 灌木：多个叶片团簇成的精灵
+    function makeBushSprite(seed) {
+      const R = 30;
+      const c = document.createElement('canvas');
+      c.width = c.height = R * 2;
+      const cg = c.getContext('2d');
+      const rr = mulberry32(seed);
+      const n = 9 + ((rr() * 5) | 0);
+      for (let i = 0; i < n; i++) {
+        const a = rr() * Math.PI * 2;
+        const d = rr() * R * 0.48;
+        const px = R + Math.cos(a) * d;
+        const py = R + Math.sin(a) * d * 0.85;
+        const rad = R * (0.24 + rr() * 0.2);
+        const grd = cg.createRadialGradient(px - rad * 0.4, py - rad * 0.45, rad * 0.1, px, py, rad);
+        const shade = 0.55 + rr() * 0.45;
+        grd.addColorStop(0, 'rgba(' + Math.round(120 * shade) + ',' + Math.round(180 * shade) + ',' + Math.round(90 * shade) + ',.95)');
+        grd.addColorStop(0.7, 'rgba(' + Math.round(58 * shade) + ',' + Math.round(96 * shade) + ',' + Math.round(48 * shade) + ',.95)');
+        grd.addColorStop(1, 'rgba(' + Math.round(30 * shade) + ',' + Math.round(56 * shade) + ',' + Math.round(28 * shade) + ',.85)');
+        cg.fillStyle = grd;
+        cg.beginPath(); cg.arc(px, py, rad, 0, Math.PI * 2); cg.fill();
+      }
+      // 叶片高光点
+      for (let i = 0; i < 26; i++) {
+        const a = rr() * Math.PI * 2, d = rr() * R * 0.62;
+        cg.fillStyle = 'rgba(190,225,150,' + (0.12 + rr() * 0.22).toFixed(2) + ')';
+        cg.beginPath();
+        cg.ellipse(R + Math.cos(a) * d, R + Math.sin(a) * d * 0.85, 1.6 + rr() * 1.6, 0.9 + rr(), rr() * 3, 0, Math.PI * 2);
+        cg.fill();
+      }
+      return c;
+    }
+    const bushSprites = [makeBushSprite(11), makeBushSprite(23), makeBushSprite(37), makeBushSprite(51)];
+    for (let i = 0; i < 300; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      if (roadDist(x, y) < W / 2 + 30) continue;
+      const sc = 0.55 + rnd() * 0.9;
+      blob(shadowSprite, x + 3, y + 4, sc * 0.5, 0.45);
+      blob(bushSprites[(rnd() * 4) | 0], x, y, sc * 0.72, 1);
+    }
+
+    // 树 / 岩石
+    for (let i = 0; i < 340; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      if (roadDist(x, y) < W / 2 + 44) continue;
+      const sc = 0.75 + rnd() * 0.85;
+      blob(shadowSprite, x + 6, y + 8, sc * 0.85, 0.5);
+      if (rnd() < 0.7) blob(treeSprites[(rnd() * 4) | 0], x, y, sc, 1);
+      else if (rnd() < 0.55) blob(coniferSprite, x, y, sc, 1);
+      else blob(rockSprites[(rnd() * 2) | 0], x, y, sc * 0.8, 1);
+    }
+    // 木桶
+    for (let i = 0; i < 200; i++) {
+      const s = rnd() * track.length;
+      const p = track.at(s);
+      const side = rnd() < 0.5 ? -1 : 1;
+      const off = (W / 2 + 15 + rnd() * 22) * side;
+      const x = p.x + p.nx * off, y = p.y + p.ny * off;
+      blob(shadowSprite, x + 2, y + 3, 0.28, 0.6);
+      g.fillStyle = rnd() < 0.5 ? '#a5432f' : '#b8873a';
+      g.beginPath(); g.arc(x, y, 6.5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.22)';
+      g.beginPath(); g.arc(x - 2, y - 2, 2.6, 0, Math.PI * 2); g.fill();
+    }
+    // 建筑（屋顶 + 设备 + 阴影）
+    for (let i = 0; i < 20; i++) {
+      const x = x0 + rnd() * w, y = y0 + rnd() * h;
+      if (roadDist(x, y) < W / 2 + 150) continue;
+      const bw = 70 + rnd() * 110, bh = 56 + rnd() * 96;
+      // 投影
+      blob(shadowSprite, x + 14, y + 18, Math.max(bw, bh) / 40, 0.6);
+      // 墙体
+      const wall = g.createLinearGradient(x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2);
+      wall.addColorStop(0, T.bldg);
+      wall.addColorStop(1, '#20232a');
+      g.fillStyle = wall;
+      g.fillRect(x - bw / 2, y - bh / 2, bw, bh);
+      // 屋顶
+      const roof = g.createLinearGradient(x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2);
+      roof.addColorStop(0, T.bldgRoof);
+      roof.addColorStop(1, '#3a3d43');
+      g.fillStyle = roof;
+      g.fillRect(x - bw / 2 + 4, y - bh / 2 + 4, bw - 8, bh - 8);
+      // 屋顶颗粒
+      g.save();
+      g.globalAlpha = 0.35;
+      g.fillStyle = asphaltPat.pat;
+      g.fillRect(x - bw / 2 + 4, y - bh / 2 + 4, bw - 8, bh - 8);
+      g.restore();
+      // 空调外机 / 天窗
+      for (let k = 0; k < 2 + ((rnd() * 2) | 0); k++) {
+        const uw = 8 + rnd() * (bw * 0.22), uh = 8 + rnd() * (bh * 0.22);
+        const ux = x - bw / 2 + 8 + rnd() * (bw - uw - 16);
+        const uy = y - bh / 2 + 8 + rnd() * (bh - uh - 16);
+        g.fillStyle = 'rgba(0,0,0,.35)';
+        g.fillRect(ux + 2, uy + 2, uw, uh);
+        g.fillStyle = '#6d727a';
+        g.fillRect(ux, uy, uw, uh);
+        g.fillStyle = 'rgba(255,255,255,.18)';
+        g.fillRect(ux, uy, uw, 2);
+      }
+      // 边缘高光 + 描边
+      g.fillStyle = 'rgba(255,255,255,.10)';
+      g.fillRect(x - bw / 2 + 4, y - bh / 2 + 4, bw - 8, 2);
+      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 1.2;
+      g.strokeRect(x - bw / 2, y - bh / 2, bw, bh);
+    }
+
+    // 护栏
+    for (const side of [-1, 1]) {
+      for (let s = 0; s < track.length; s += 18) {
+        if (rnd() < 0.62) continue;
+        const p = track.at(s);
+        const off = (W / 2 + 22) * side;
+        const x = p.x + p.nx * off, y = p.y + p.ny * off;
+        g.save();
+        g.translate(x, y);
+        g.rotate(Math.atan2(p.ty, p.tx));
+        g.fillStyle = 'rgba(0,0,0,.35)';
+        g.fillRect(-9, 1, 18, 4);
+        g.fillStyle = T.rim;
+        g.fillRect(-9, -2, 18, 3);
+        g.fillStyle = 'rgba(255,255,255,.25)';
+        g.fillRect(-9, -2, 18, 1);
+        g.restore();
+      }
+    }
+
+    // 弯道箭头牌
+    for (let s = 0; s < track.length; s += 40) {
+      const b = track.at(s + 90), c = track.at(s + 180);
+      let d = Math.atan2(c.ty, c.tx) - Math.atan2(b.ty, b.tx);
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      if (Math.abs(d) < 0.24 || rnd() < 0.6) continue;
+      const p = track.at(s);
+      const side = d > 0 ? 1 : -1;
+      const x = p.x + p.nx * (W / 2 + 30) * side;
+      const y = p.y + p.ny * (W / 2 + 30) * side;
+      blob(shadowSprite, x + 3, y + 4, 0.3, 0.5);
+      g.save();
+      g.translate(x, y);
+      g.rotate(Math.atan2(p.ty, p.tx) + Math.PI / 2);
+      g.fillStyle = '#e6e2d6';
+      g.fillRect(-8, -11, 16, 22);
+      g.fillStyle = T.curbA;
+      for (let i = 0; i < 3; i++) g.fillRect(-5, -8 + i * 7, 10, 4);
+      g.restore();
+    }
+
+    // 广告牌
+    const ADS = ['K-RALLY', 'IDREAMS.PL', 'NEON', 'TURBO'];
+    for (let i = 0; i < 12; i++) {
+      const s = rnd() * track.length;
+      const p = track.at(s);
+      const side = rnd() < 0.5 ? -1 : 1;
+      const x = p.x + p.nx * (W / 2 + 62 + rnd() * 36) * side;
+      const y = p.y + p.ny * (W / 2 + 62 + rnd() * 36) * side;
+      blob(shadowSprite, x + 8, y + 10, 0.8, 0.45);
+      g.save();
+      g.translate(x, y);
+      g.rotate(Math.atan2(p.ty, p.tx));
+      g.fillStyle = '#23262b';
+      g.fillRect(-2.5, -4, 5, 18);
+      g.fillStyle = '#14171b';
+      g.fillRect(-28, -20, 56, 20);
+      g.strokeStyle = '#5a6068'; g.lineWidth = 1.5;
+      g.strokeRect(-28, -20, 56, 20);
+      g.fillStyle = '#cfd6de';
+      g.font = 'bold 8px "Segoe UI", sans-serif';
+      g.textAlign = 'center';
+      g.fillText(ADS[i % ADS.length], 0, -7);
+      g.restore();
+    }
+
+    // 路灯
+    for (let s = 150; s < track.length; s += 320) {
+      const p = track.at(s);
+      for (const side of [-1, 1]) {
+        const x = p.x + p.nx * (W / 2 + 24) * side;
+        const y = p.y + p.ny * (W / 2 + 24) * side;
+        const grd = g.createRadialGradient(x, y, 0, x, y, 70);
+        grd.addColorStop(0, T.lamp);
+        grd.addColorStop(1, 'rgba(255,200,120,0)');
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(x, y, 70, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2a2d33';
+        g.beginPath(); g.arc(x, y, 3.5, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#fff3d0';
+        g.beginPath(); g.arc(x, y, 1.6, 0, Math.PI * 2); g.fill();
+      }
+    }
+
+    // ---------------- 光照 ----------------
+    const light = g.createRadialGradient(x0 + w * 0.42, y0 + h * 0.32, 0, x0 + w * 0.42, y0 + h * 0.32, Math.max(w, h) * 0.75);
+    light.addColorStop(0, 'rgba(255,240,210,.10)');
+    light.addColorStop(0.5, 'rgba(0,0,0,0)');
+    light.addColorStop(1, 'rgba(0,0,0,.42)');
+    g.fillStyle = light;
+    g.fillRect(x0, y0, w, h);
+
+    return { canvas: cv, x: x0, y: y0, w: w, h: h, theme: T };
+  }
+
+  return { build, THEMES };
+})();
+</script>
+<script>
+// meta.js - 存档（按车手独立）/ 车库 / 商店 / 锦标赛
+const Meta = (() => {
+  const SAVE_KEY = 'krally_save_v3';
+  const LEGACY_KEY = 'krally_save_v2';
+
+  const CARS = [
+    { id: 'kite',   name: 'KITE',   price: 0,     speed: 402, accel: 330, handling: 1.00, color: '#2ad0ff',
+      desc: '入门车。均衡，好开，也容易被撞。' },
+    { id: 'viper',  name: 'VIPER',  price: 2400,  speed: 428, accel: 356, handling: 1.06, color: '#ff3d8b',
+      desc: '中段车。直线更快，转向略敏感。' },
+    { id: 'wraith', name: 'WRAITH', price: 6500,  speed: 452, accel: 382, handling: 1.12, color: '#ffb02e',
+      desc: '高级车。加速强，过弯稳。' },
+    { id: 'novax',  name: 'NOVA-X', price: 13000, speed: 478, accel: 408, handling: 1.20, color: '#8b5cff',
+      desc: '顶级车。全场最快，但很贵。' },
+  ];
+
+  const UPGRADES = {
+    engine: { name: 'ENGINE',  zh: '引擎', desc: '直线速度与加速', costs: [600, 1400, 2800], per: { speed: 16, accel: 12 } },
+    tires:  { name: 'TIRES',   zh: '轮胎', desc: '转向响应与抓地', costs: [500, 1200, 2400], per: { handling: 0.05 } },
+    weapon: { name: 'WEAPONS', zh: '武器', desc: '开局自带武器',   costs: [800, 1600, 3200], per: {} },
+  };
+
+  const CHAMPS = [
+    { id: 'rookie', name: 'ROOKIE CUP', zh: '新人杯',     skill: 0.86, laps: 3, tracks: [0, 1, 0], races: 3,
+      prize: { cash: 800,  xp: 150 }, unlock: null,     desc: '新人杯。三场，对手水平一般。' },
+    { id: 'champ',  name: 'CHAMPIONSHIP', zh: '冠军赛',   skill: 0.95, laps: 3, tracks: [1, 0, 1, 0], races: 4,
+      prize: { cash: 2500, xp: 400 }, unlock: 'viper',  desc: '正赛。四场，奖金 $2500 / 400 XP。' },
+    { id: 'master', name: 'MASTER LEAGUE', zh: '大师联赛',  skill: 1.03, laps: 4, tracks: [0, 1, 0, 1], races: 4,
+      prize: { cash: 6000, xp: 900 }, unlock: 'wraith', desc: '大师联赛。四场，奖金 $6000 / 900 XP。' },
+  ];
+
+  const PAYOUT = [0, 600, 380, 220, 120];
+
+  // ---------- 车手档案 ----------
+  function blankChamps() {
+    return {
+      rookie: { started: false, event: 0, done: false },
+      champ:  { started: false, event: 0, done: false },
+      master: { started: false, event: 0, done: false },
+    };
+  }
+  function blankProfile() {
+    return {
+      cash: 400, xp: 0,
+      cars: ['kite'], currentCar: 'kite',
+      upgrades: { kite: { engine: 0, tires: 0, weapon: 0 } },
+      champs: blankChamps(),
+      bestLaps: {}, races: 0, wins: 0, champsWon: 0, unlocked: [],
+    };
+  }
+
+  function roster() { return (typeof window !== 'undefined' && window.DRIVERS) ? window.DRIVERS : []; }
+  function nameOf(i) { const r = roster(); return (r[i] || {}).name || ('DRIVER' + i); }
+
+  function normalizeProfile(raw) {
+    const base = blankProfile();
+    const out = Object.assign({}, base, raw || {});
+    out.upgrades = out.upgrades || {};
+    out.champs = Object.assign({}, base.champs, out.champs || {});
+    CARS.forEach(c => { if (!out.upgrades[c.id]) out.upgrades[c.id] = { engine: 0, tires: 0, weapon: 0 }; });
+    if (!out.cars || !out.cars.length) out.cars = ['kite'];
+    if (!out.cars.includes(out.currentCar)) out.currentCar = out.cars[0];
+    if (typeof out.champsWon !== 'number') out.champsWon = 0;
+    return out;
+  }
+
+  let root = { driverIdx: 0, profiles: {} };
+  let data = blankProfile();
+
+  function activate(i) {
+    const r = roster();
+    const max = Math.max(0, r.length - 1);
+    root.driverIdx = Math.min(max, Math.max(0, i | 0));
+    const nm = nameOf(root.driverIdx);
+    if (!root.profiles[nm]) root.profiles[nm] = blankProfile();
+    root.profiles[nm] = normalizeProfile(root.profiles[nm]);
+    data = root.profiles[nm];
+    return data;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        root = { driverIdx: parsed.driverIdx || 0, profiles: parsed.profiles || {} };
+      } else {
+        // 从旧的单档案存档迁移
+        const legacy = localStorage.getItem(LEGACY_KEY);
+        if (legacy) {
+          root = { driverIdx: 0, profiles: {} };
+          root.profiles[nameOf(0)] = normalizeProfile(JSON.parse(legacy));
+        }
+      }
+    } catch (e) {
+      root = { driverIdx: 0, profiles: {} };
+    }
+    activate(root.driverIdx);
+    return data;
+  }
+
+  function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(root)); } catch (e) {}
+  }
+
+  function reset() {
+    root = { driverIdx: 0, profiles: {} };
+    activate(0);
+    save();
+  }
+
+  function setDriver(i) {
+    activate(i);
+    save();
+    return data;
+  }
+
+  function profileOf(i) {
+    const r = roster();
+    const nm = (typeof i === 'number') ? nameOf(i) : i;
+    if (!root.profiles[nm]) root.profiles[nm] = blankProfile();
+    return root.profiles[nm];
+  }
+  function driverWins(nm) { return profileOf(nm).champsWon; }
+  function addDriverWin(nm) { profileOf(nm).champsWon += 1; save(); }
+
+  // ---------- 车辆 ----------
+  const get = (id) => CARS.find(c => c.id === id);
+  const upgOf = (id) => data.upgrades[id] || { engine: 0, tires: 0, weapon: 0 };
+
+  function stats(id) {
+    const car = get(id || data.currentCar);
+    const u = upgOf(car.id);
+    let speed = car.speed, accel = car.accel, handling = car.handling;
+    speed += u.engine * UPGRADES.engine.per.speed;
+    accel += u.engine * UPGRADES.engine.per.accel;
+    handling += u.tires * UPGRADES.tires.per.handling;
+    return {
+      id: car.id, name: car.name, color: car.color,
+      speed, accel, handling,
+      startWeapon: u.weapon > 0 ? 'rocket' : null,
+      startAmmo: u.weapon > 0 ? u.weapon : 0,
+    };
+  }
+
+  const level = () => Math.floor(data.xp / 500) + 1;
+
+  function canAfford(n) { return data.cash >= n; }
+
+  function buyCar(id) {
+    const car = get(id);
+    if (!car || data.cars.includes(id)) return { ok: false, msg: '已拥有' };
+    if (!canAfford(car.price)) return { ok: false, msg: '现金不足' };
+    data.cash -= car.price;
+    data.cars.push(id);
+    data.upgrades[id] = { engine: 0, tires: 0, weapon: 0 };
+    save();
+    return { ok: true, msg: '已购入 ' + car.name };
+  }
+
+  function upgradePrice(carId, slot) {
+    const u = upgOf(carId)[slot] || 0;
+    const costs = UPGRADES[slot].costs;
+    return u >= costs.length ? null : costs[u];
+  }
+
+  function buyUpgrade(carId, slot) {
+    const price = upgradePrice(carId, slot);
+    if (price == null) return { ok: false, msg: '已满级' };
+    if (!canAfford(price)) return { ok: false, msg: '现金不足' };
+    data.cash -= price;
+    data.upgrades[carId][slot] += 1;
+    save();
+    return { ok: true, msg: UPGRADES[slot].name + ' 升级成功' };
+  }
+
+  function selectCar(id) {
+    if (!data.cars.includes(id)) return false;
+    data.currentCar = id; save(); return true;
+  }
+
+  // ---------- 锦标赛 ----------
+  function champState(id) { return data.champs[id]; }
+  function champOf(id) { return CHAMPS.find(c => c.id === id); }
+
+  function startChamp(id) {
+    const st = data.champs[id];
+    if (!st) return false;
+    st.started = true; st.event = 0; save(); return true;
+  }
+
+  function nextEvent(id) {
+    const st = data.champs[id];
+    const ch = champOf(id);
+    return { index: st.event, total: ch.races, track: ch.tracks[st.event % ch.tracks.length], laps: ch.laps, skill: ch.skill };
+  }
+
+  function finishEvent(id, position) {
+    const st = data.champs[id];
+    const ch = champOf(id);
+    const cash = PAYOUT[Math.min(position, PAYOUT.length - 1)] || 60;
+    const xp = 60 + Math.max(0, (4 - position)) * 40;
+    data.cash += cash; data.xp += xp; data.races += 1;
+    if (position === 1) data.wins += 1;
+
+    st.event += 1;
+    let champDone = false;
+    if (st.event >= ch.races) {
+      st.done = true; champDone = true;
+      data.cash += ch.prize.cash; data.xp += ch.prize.xp;
+      data.champsWon = (data.champsWon || 0) + 1;
+      if (ch.unlock && !data.cars.includes(ch.unlock)) {
+        data.unlocked = data.unlocked || [];
+        if (!data.unlocked.includes(ch.unlock)) data.unlocked.push(ch.unlock);
+      }
+    }
+    save();
+    return { cash, xp, champDone, prize: champDone ? ch.prize : null, position };
+  }
+
+  function finishQuick(position) {
+    const cash = Math.round((PAYOUT[Math.min(position, PAYOUT.length - 1)] || 60) * 0.6);
+    const xp = 30 + Math.max(0, (4 - position)) * 20;
+    data.cash += cash; data.xp += xp; data.races += 1;
+    if (position === 1) data.wins += 1;
+    save();
+    return { cash, xp };
+  }
+
+  function recordBestLap(trackKey, t) {
+    const cur = data.bestLaps[trackKey];
+    if (!cur || t < cur) { data.bestLaps[trackKey] = t; save(); return true; }
+    return false;
+  }
+
+  return {
+    CARS, UPGRADES, CHAMPS, load, save, reset,
+    get data() { return data; },
+    get driverIdx() { return root.driverIdx; },
+    stats, level, get car() { return get(data.currentCar); },
+    canAfford, buyCar, buyUpgrade, upgradePrice, selectCar, upgOf,
+    champState, champOf, startChamp, nextEvent, finishEvent, finishQuick, recordBestLap,
+    setDriver, profileOf, driverWins, addDriverWin, nameOf,
+  };
+})();
+</script>
+<script>
+// game.js - K-RALLY 重制版原型
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let VW = canvas.width, VH = canvas.height;
+  let ZOOM = 0.62;
+  function resizeCanvas() {
+    const vw = window.innerWidth || document.documentElement.clientWidth || 800;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 360;
+    const w = Math.max(320, vw | 0);
+    const h = Math.max(200, vh | 0);
+    // CSS 负责铺满，这里只改位图分辨率
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w; canvas.height = h;
+    }
+    VW = canvas.width; VH = canvas.height;
+    // 视野：高度约 900 世界单位，宽度不超过 1700
+    ZOOM = Math.max(VH / 900, VW / 1700);
+  }
+  addEventListener('resize', resizeCanvas);
+  addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+  const CONTENT = window.GAME_CONTENT || { dialogue: [], ui_labels: [] };
+  const SND = window.Sound;
+  const T = (typeof I18N !== 'undefined') ? function (k) { return I18N.t(k); } : function (k) { return k; };
+  const isZh = () => (typeof I18N !== 'undefined' && I18N.get() === 'zh');
+  const trackName = (tr) => (isZh() && tr && tr.zh) ? tr.zh : (tr ? tr.name : '');
+  const champName = (ch) => (isZh() && ch && ch.zh) ? ch.zh : (ch ? ch.name : '');
+  const upgName = (u) => (isZh() && u && u.zh) ? u.zh : (u ? u.name : '');
+  const bodyName = (b) => T('body' + b.charAt(0).toUpperCase() + b.slice(1));
+  function audioInit() { if (SND) { SND.init(); } }
+  const KEYS = {};
+  const AUTOPLAY = location.search.includes('autoplay');
+  const NOAVOID = location.search.includes('noavoid');   // A/B 测试用：关闭避让
+
+  // ---------- 车手（台词/设定取自解包文本） ----------
+  const ROSTER = (typeof window !== 'undefined' && window.DRIVERS) ? window.DRIVERS : [];
+  const DRIVERS = ROSTER;;
+
+  const LAPS = 3;
+  const TAU = Math.PI * 2;
+
+  // ---------- 工具 ----------
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const wrapAngle = (a) => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr.length ? arr[(Math.random() * arr.length) | 0] : '';
+
+  const TALK = (CONTENT.dialogue || []).filter(s => s.length >= 12 && s.length <= 120);
+  const UI = CONTENT.ui_labels || [];
+
+  // ---------- 输入 ----------
+  addEventListener('keydown', (e) => {
+    KEYS[e.code] = true;
+    audioInit();
+    if (e.code === 'KeyM' && SND) SND.toggleMute();
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+    if (e.code === 'KeyP' && G.state === 'racing') togglePause();
+    if (e.code === 'Space' && G.state === 'racing') playerFire();
+    if (e.code === 'ShiftLeft' && G.state === 'racing') playerDrop();
+  });
+  addEventListener('keyup', (e) => { KEYS[e.code] = false; });
+
+  // 触屏控制（安卓）
+  const touch = { left: false, right: false, gas: false, brake: false };
+  function bindTouch() {
+    const mk = (id, prop) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const on = (e) => { e.preventDefault(); touch[prop] = true; };
+      const off = (e) => { e.preventDefault(); touch[prop] = false; };
+      el.addEventListener('touchstart', on, { passive: false });
+      el.addEventListener('touchend', off, { passive: false });
+      el.addEventListener('touchcancel', off, { passive: false });
+    };
+    ['tLeft','tRight','tGas','tBrake'].forEach(id => mk(id));
+    const fire = document.getElementById('tFire');
+    if (fire) fire.addEventListener('touchstart', (e) => { e.preventDefault(); playerFire(); }, { passive: false });
+  }
+
+  // ---------- 车辆 ----------
+  class Car {
+    constructor(driver, track, isPlayer, slot, stats) {
+      this.driver = driver;
+      this.track = track;
+      this.isPlayer = isPlayer;
+      this.slot = slot;
+      this.stats = stats || null;
+      const p = track.startPose();
+      const off = (slot - 1.5) * 46;
+      const s0 = 80 + slot * 42;
+      const st = track.at(track.length + s0);
+      this.x = st.x + st.nx * off;
+      this.y = st.y + st.ny * off;
+      this.angle = Math.atan2(st.ty, st.tx);
+      this.speed = 0;
+      this.maxSpeed = stats ? stats.speed : (isPlayer ? 430 : 402 + rand(-14, 22));
+      this.accelStat = stats ? stats.accel : 330;
+      this.handling = stats ? stats.handling : 1;
+      this.health = 100;
+      this.armor = (stats && stats.armor) ? stats.armor : 1;
+      this.pickupR = (stats && stats.pickup) ? stats.pickup : 1;
+      this.lap = 1;
+      this.s = st.s;
+      this.prevS = st.s;
+      this.dist = 0;
+      this.lapStart = 0;
+      this.bestLap = null;
+      this.finished = false;
+      this.finishTime = 0;
+      this.weapon = (stats && stats.startWeapon) ? stats.startWeapon : null;
+      this.ammo = (stats && stats.startAmmo) ? stats.startAmmo : 0;
+      this.stun = 0;
+      this.boost = 0;
+      this.thrust = 0;
+      this.drift = 0;
+      this.px = this.x; this.py = this.y;
+      this.lateralBias = rand(-0.45, 0.45);
+    }
+
+    get progress() { return (this.lap - 1) * this.track.length + this.s; }
+
+    update(dt, input) {
+      const track = this.track;
+      const near = track.nearest(this.x, this.y);
+      const halfW = track.width / 2;
+      const offroad = Math.abs(near.lateral) > halfW * 0.92;
+
+      // 转向
+      const steerInput = input.steer;
+      const speedFactor = clamp(1 - this.speed / (this.maxSpeed * 1.6), 0.35, 1);
+      this.angle += steerInput * 2.9 * dt * speedFactor * this.handling * (offroad ? 0.7 : 1);
+
+      // 加速 / 刹车
+      let accel = 0;
+      if (this.stun > 0) accel = -60;
+      else {
+        accel = input.gas ? this.accelStat : -90;
+        if (input.brake) accel -= 520;
+      }
+      if (this.boost > 0) { accel += 520; this.boost -= dt; }
+
+      const maxSpeed = this.maxSpeed * (this.boost > 0 ? 1.32 : 1) * (offroad ? 0.55 : 1);
+      this.speed += accel * dt;
+      this.speed -= this.speed * (offroad ? 2.4 : 0.55) * dt;
+      this.speed = clamp(this.speed, offroad ? -60 : -150, maxSpeed);
+
+      // 侧滑（漂移视觉）
+      this.drift = lerp(this.drift, offroad ? 0.35 : Math.abs(steerInput) * 0.55 * (this.speed / this.maxSpeed), dt * 6);
+
+      // 位移
+      this.px = this.x; this.py = this.y;
+      this.x += Math.cos(this.angle) * this.speed * dt;
+      this.y += Math.sin(this.angle) * this.speed * dt;
+
+      // 进度 / 圈数（用累计里程判定，避免 s 跳变误判）
+      this.prevS = this.s;
+      this.s = near.s;
+      let ds = this.s - this.prevS;
+      const L = track.length;
+      if (ds > L * 0.5) ds -= L;
+      else if (ds < -L * 0.5) ds += L;
+      this.dist += ds;
+      if (this.dist < 0) this.dist = 0;
+      const lapNow = Math.max(1, Math.floor(this.dist / L) + 1);
+      if (lapNow !== this.lap) {
+        this.lap = lapNow;
+        if (this.lap > 1) {
+          const lapTime = G.raceTime - this.lapStart;
+          if (lapTime > 5 && (!this.bestLap || lapTime < this.bestLap)) this.bestLap = lapTime;
+        }
+        this.lapStart = G.raceTime;
+        if (this.lap > G.laps && !this.finished) {
+          this.finished = true;
+          this.finishTime = G.raceTime;
+          if (this.isPlayer) endRace();
+        }
+      }
+
+      // 拖尾粒子
+      if (Math.random() < this.drift * 0.9) {
+        G.particles.push({ x: this.x, y: this.y, vx: rand(-20, 20), vy: rand(-20, 20), life: 0.5, max: 0.5,
+          r: rand(2, 5), color: offroad ? '120,90,60' : '160,200,255' });
+      }
+      if (this.stun > 0) this.stun -= dt;
+    }
+  }
+
+  // ---------- 世界状态 ----------
+  const G = {
+    state: 'menu',
+    track: null,
+    cars: [],
+    player: null,
+    pickups: [],
+    rockets: [],
+    mines: [],
+    particles: [],
+    raceTime: 0,
+    countdown: 0,
+    camX: 0, camY: 0,
+    tauntTimer: 0,
+    bannerTimer: 0,
+    selectedDriver: 0,
+    selectedTrack: 0,
+    lastLapShown: 1,
+  };
+
+  function buildTrack(idx) {
+    const def = TRACKS[idx];
+    return new Track(def.points, def.width, def.name);
+  }
+
+  function spawnPickups(track) {
+    const types = ['rocket', 'turbo', 'mine', 'rocket', 'turbo', 'mine', 'rocket', 'turbo'];
+    const list = [];
+    const n = types.length;
+    for (let i = 0; i < n; i++) {
+      const p = track.at((i + 0.5) * (track.length / n));
+      list.push({ x: p.x + p.nx * rand(-40, 40), y: p.y + p.ny * rand(-40, 40), type: types[i], respawn: 0, alive: true });
+    }
+    return list;
+  }
+
+  function startRace(trackIdx, opts) {
+    opts = opts || {};
+    G.career = opts.career || null;
+    G.collisions = 0;
+    G.tactics = { block: 0, ram: 0, loot: 0 };
+    G.laps = opts.laps || LAPS;
+    const track = buildTrack(trackIdx == null ? G.selectedTrack : trackIdx);
+    G.track = track;
+    G.mapCache = G.mapCache || {};
+    const mapKey = track.name;
+    if (!G.mapCache[mapKey] && typeof Terrain !== 'undefined') {
+      try {
+        G.mapCache[mapKey] = Terrain.build(track, (trackIdx == null ? G.selectedTrack : trackIdx));
+      } catch (e) {
+        G.mapCache[mapKey] = null;
+        window.__MAPERR = (e && e.message) + ' | ' + ((e && e.stack) ? e.stack.split('\n')[1] : '');
+      }
+    }
+    G.map = G.mapCache[mapKey] || null;
+    G.cars = [];
+    const pstats = Meta.stats();
+    const drv0 = DRIVERS[G.selectedDriver] || DRIVERS[0];
+    const PK = drv0.perk || {};
+    pstats.speed *= (PK.speed || 1);
+    pstats.accel *= (PK.accel || 1);
+    pstats.handling *= (PK.grip || 1);
+    pstats.armor = PK.armor || 1;
+    pstats.pickup = PK.pickup || 1;
+    const skill = opts.skill || 0.9;
+    const aiSpeed = 330 + skill * 80;
+    const aiAccel = 296 + skill * 74;
+    const aiHandling = 0.96 + (skill - 0.9) * 0.6;
+    const order = [0, 1, 2, 3].map(i => (G.selectedDriver + i) % DRIVERS.length);
+    for (let i = 0; i < 4; i++) {
+      const drv = DRIVERS[order[i]] || DRIVERS[0];
+      const dp = drv.perk || {};
+      const st = i === 0 ? pstats : {
+        speed: (aiSpeed + rand(-8, 8)) * (dp.speed || 1),
+        accel: aiAccel * (dp.accel || 1),
+        handling: aiHandling * (dp.grip || 1),
+        armor: dp.armor || 1,
+        pickup: dp.pickup || 1,
+      };
+      const car = new Car(drv, track, i === 0, i, st);
+      if (i === 0 && pstats.startWeapon) { car.weapon = pstats.startWeapon; car.ammo = pstats.startAmmo; }
+      car.traits = DRIVERS[order[i]].traits;
+      car.picked = 0;
+      G.cars.push(car);
+    }
+    G.player = G.cars[0];
+    G.pickups = spawnPickups(track);
+    G.rockets = []; G.mines = []; G.particles = [];
+    G.raceTime = 0; G.countdown = 3.6; G.tauntTimer = 0; G.bannerTimer = 0;
+    G.lastLapShown = 1;
+    G.camX = G.player.x; G.camY = G.player.y;
+    G.state = 'countdown';
+    G.lastBeep = 99;
+    if (SND) { SND.init(); SND.engineStart(); SND.musicStart(); }
+    document.getElementById('menu').classList.add('hidden');
+    document.getElementById('result').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('lapTotal').textContent = G.laps;
+    updateWeaponHUD();
+    showBanner(T('ready'));
+  }
+
+  function endRace() {
+    G.state = 'finished';
+    if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); }
+    const p = G.player;
+    const pos = positionOf(p);
+    if (p.bestLap && G.track) Meta.recordBestLap(G.track.name, p.bestLap);
+
+    let rewards = null, champDone = false;
+    if (G.career) {
+      rewards = Meta.finishEvent(G.career.champId, pos);
+      champDone = rewards.champDone;
+      if (champDone) Meta.addDriverWin((DRIVERS[G.selectedDriver] || {}).name);
+      G.resultAction = champDone ? 'career' : 'next';
+    } else {
+      rewards = Meta.finishQuick(pos);
+      G.resultAction = 'again';
+    }
+    const drvPerk = (DRIVERS[G.selectedDriver] || {}).perk || {};
+    rewards.cash = Math.round(rewards.cash * (drvPerk.prize || 1));
+    rewards.xp = Math.round(rewards.xp * (drvPerk.xp || 1));
+    refreshTopbar();
+
+    document.getElementById('result').classList.remove('hidden');
+    document.getElementById('resultTitle').textContent = pos === 1 ? T('winner') : (T('finish') + ' ' + pos + '/4');
+    if (SND) {
+      if (pos === 1) SND.finish(true); else SND.finish(false);
+    }
+    document.getElementById('resultStats').innerHTML =
+      T('total') + ' ' + fmtTime(p.finishTime) + '<br>' +
+      T('bestLap') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--');
+    const rw = document.getElementById('resultRewards');
+    rw.innerHTML = '+$' + rewards.cash + ' &nbsp; +' + rewards.xp + ' ' + T('xp') +
+      (champDone ? '<br><span style="color:#ffd479">' + T('champDone') + ' +$' + rewards.prize.cash + ' / +' + rewards.prize.xp + ' XP</span>' : '');
+    const btn = document.getElementById('againBtn');
+    btn.textContent = champDone ? T('back') : (G.career ? T('next') : T('again'));
+  }
+
+  function positionOf(car) {
+    const sorted = [...G.cars].sort((a, b) => {
+      if (a.finished && b.finished) return a.finishTime - b.finishTime;
+      if (a.finished) return -1;
+      if (b.finished) return 1;
+      return b.progress - a.progress;
+    });
+    return sorted.indexOf(car) + 1;
+  }
+
+  function fmtTime(t) {
+    if (t == null) return '--:--.--';
+    const m = Math.floor(t / 60);
+    const s = t - m * 60;
+    return m + ':' + (s < 10 ? '0' : '') + s.toFixed(2);
+  }
+
+  // ---------- 武器 ----------
+  function playerFire() {
+    const p = G.player;
+    if (!p || p.finished) return;
+    if (p.weapon === 'rocket' && p.ammo > 0) {
+      G.rockets.push({ x: p.x + Math.cos(p.angle) * 30, y: p.y + Math.sin(p.angle) * 30,
+        angle: p.angle, speed: 780, life: 2.2, owner: p });
+      if (SND) SND.rocket();
+      p.ammo--;
+      if (p.ammo <= 0) { p.weapon = null; }
+      updateWeaponHUD();
+    } else if (p.weapon === 'turbo') {
+      p.boost = 1.6; p.weapon = null; p.ammo = 0; updateWeaponHUD();
+      if (SND) { SND.rocket(); SND.pickup(); }
+      showTaunt(pick([T('turboShout'), T('boostShout')]));
+    }
+  }
+
+  function playerDrop() {
+    const p = G.player;
+    if (!p || p.finished) return;
+    if (p.weapon === 'mine' && p.ammo > 0) {
+      G.mines.push({ x: p.x - Math.cos(p.angle) * 34, y: p.y - Math.sin(p.angle) * 34, life: 26, owner: p });
+      if (SND) SND.mineDrop();
+      p.ammo--;
+      if (p.ammo <= 0) p.weapon = null;
+      updateWeaponHUD();
+    } else {
+      p.weapon = null; p.ammo = 0; updateWeaponHUD();
+    }
+  }
+
+  function updateWeaponHUD() {
+    const p = G.player;
+    const name = document.getElementById('weaponName');
+    const ammo = document.getElementById('weaponAmmo');
+    if (!p || !p.weapon) { name.textContent = '--'; ammo.textContent = ''; return; }
+    const label = p.weapon === 'rocket' ? T('rocket') : p.weapon === 'mine' ? T('mine') : T('turbo');
+    name.textContent = label;
+    ammo.textContent = p.weapon === 'turbo' ? T('spaceKey') : 'x' + p.ammo;
+  }
+
+  // ---------- AI：循迹 + 避让 + 战术层（封堵 / 撞人 / 抢道具） ----------
+  const NOTACTICS = location.search.includes('notactics');
+
+  // 战术决策（每 0.2~0.35 秒重算一次，避免抖动）
+  function aiDecide(car, fx, fy, track) {
+    const T = car.traits;
+
+    // 1) 抢道具：附近有道具，且（手里没武器 或 想抢在别人前面）
+    let pkBest = null, pkD = Infinity;
+    for (const pk of G.pickups) {
+      if (!pk.alive) continue;
+      const d = Math.hypot(pk.x - car.x, pk.y - car.y);
+      if (d < 230 && d < pkD) { pkD = d; pkBest = pk; }
+    }
+    if (pkBest) {
+      const wantIt = !car.weapon || car.weapon !== pkBest.type;
+      if (wantIt && Math.random() < T.loot) {
+        const contested = G.cars.some(o => o !== car && !o.finished &&
+          Math.hypot(o.x - pkBest.x, o.y - pkBest.y) < pkD + 45);
+        return { mode: 'loot', pickup: pkBest, contested: contested };
+      }
+    }
+
+    // 2) 故意撞人：近距离、偏角不大、目标比我慢或并排
+    let ramBest = null, ramScore = 0;
+    for (const o of G.cars) {
+      if (o === car || o.finished) continue;
+      const dx = o.x - car.x, dy = o.y - car.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 130 || dist < 12) continue;
+      const forward = dx * fx + dy * fy;
+      const side = dx * -fy + dy * fx;
+      if (forward < -20) continue;
+      const ang = Math.abs(Math.atan2(side, forward));
+      if (ang > 1.15) continue;
+      const gain = o.speed <= car.speed * 1.05 ? 1 : 0.55;   // 撞更快的收益低
+      const score = (1 - dist / 130) * gain * T.aggr;
+      if (score > ramScore) { ramScore = score; ramBest = o; }
+    }
+    // 撞人有冷却，避免一路撞过去
+    if (ramBest && (car.ramCd || 0) <= 0 && Math.random() < T.aggr * 0.32) {
+      car.ramCd = 2.5 + Math.random() * 2;
+      return { mode: 'ram', rival: ramBest };
+    }
+
+    // 3) 封堵：后方有更快/更近的车想超
+    let chase = null, chaseScore = 0;
+    for (const o of G.cars) {
+      if (o === car || o.finished) continue;
+      const dx = o.x - car.x, dy = o.y - car.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 200) continue;
+      const forward = dx * fx + dy * fy;
+      if (forward > -10) continue;                            // 必须在后方
+      const threat = (o.speed > car.speed - 6) || (car.progress - o.progress < 140);
+      if (!threat) continue;
+      const score = (1 - Math.abs(forward) / 200) * T.block;
+      if (score > chaseScore) { chaseScore = score; chase = o; }
+    }
+    if (chase && Math.random() < T.block * 0.9) return { mode: 'block', chaser: chase };
+
+    return { mode: 'race' };
+  }
+
+  function aiInput(car, dt) {
+    const track = car.track;
+    const look = 150 + car.speed * 0.55;
+    const target = track.at(car.s + look);
+    const lateral = car.lateralBias * (track.width * 0.22);
+    const tx = target.x + target.nx * lateral;
+    const ty = target.y + target.ny * lateral;
+    const desired = Math.atan2(ty - car.y, tx - car.x);
+    const diff = wrapAngle(desired - car.angle);
+
+    const ahead = track.at(car.s + 260);
+    const curv = Math.abs(wrapAngle(Math.atan2(ahead.ty, ahead.tx) - Math.atan2(target.ty, target.tx)));
+    let gas = curv > 0.55 ? car.speed < car.maxSpeed * 0.62 : true;
+
+    const fx = Math.cos(car.angle), fy = Math.sin(car.angle);
+
+    // ---- 战术决策 ----
+    let tactic = 'race', dec = { mode: 'race' };
+    if (!NOTACTICS && car.traits) {
+      car.decTimer = (car.decTimer || 0) - dt;
+      if (car.decTimer <= 0) {
+        car.decTimer = 0.2 + Math.random() * 0.15;
+        car.ramCd = Math.max(0, (car.ramCd || 0) - car.decTimer);
+        car.dec = aiDecide(car, fx, fy, track);
+      }
+      dec = car.dec || { mode: 'race' };
+      tactic = dec.mode;
+    }
+    // 撞击目标不参与避让，否则会互相抵消
+    const ramTarget = (tactic === 'ram') ? dec.rival : null;
+
+    // ---- 基础避让 ----
+    let avoid = 0, blocked = 0;
+    for (const o of G.cars) {
+      if (NOAVOID) break;
+      if (o === car || o.finished || o === ramTarget) continue;
+      const dx = o.x - car.x, dy = o.y - car.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 150 || dist < 0.01) continue;
+      const forward = (dx * fx + dy * fy);
+      const side = (dx * -fy + dy * fx);
+      const weight = 1 - dist / 150;
+      avoid += (side > 0 ? -1 : 1) * weight * 0.85;
+      if (forward > 0 && Math.abs(side) < 34 && dist < 110) {
+        blocked = Math.max(blocked, (1 - dist / 110) * (1 - Math.abs(side) / 34));
+      }
+    }
+    for (const m of G.mines) {
+      if (NOAVOID) break;
+      const dx = m.x - car.x, dy = m.y - car.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 130 || dist < 0.01) continue;
+      const forward = (dx * fx + dy * fy);
+      const side = (dx * -fy + dy * fx);
+      if (forward > 0) {
+        const w = 1 - dist / 130;
+        avoid += (side > 0 ? -1 : 1) * w * 1.1;
+        if (Math.abs(side) < 26) blocked = Math.max(blocked, w * 0.7);
+      }
+    }
+
+    // ---- 战术转向 ----
+    let steer = clamp(diff * 2.4 + avoid, -1, 1);
+    let brake = blocked > 0.75;
+
+    if (tactic === 'loot' && dec.pickup && dec.pickup.alive) {
+      const ang = Math.atan2(dec.pickup.y - car.y, dec.pickup.x - car.x);
+      const dd = wrapAngle(ang - car.angle);
+      steer = clamp(dd * 2.9 + avoid * 0.45 + diff * 0.25, -1, 1);
+      gas = true;
+      if (dec.contested && car.weapon === 'turbo') { car.boost = 1.3; car.weapon = null; }
+      if (G.tactics) G.tactics.loot += dt;
+    } else if (tactic === 'ram' && dec.rival && !dec.rival.finished) {
+      const rv = dec.rival;
+      const ang = Math.atan2(rv.y - car.y, rv.x - car.x);
+      const dd = wrapAngle(ang - car.angle);
+      steer = clamp(dd * 2.8 + avoid * 0.35, -1, 1);
+      gas = true;
+      brake = false;
+      // 撞击瞬间给一点加成，让"故意撞"更有威胁
+      if (car.traits.aggr > 0.6 && car.boost <= 0 && Math.random() < dt * 0.5) car.boost = 0.45;
+      if (G.tactics) G.tactics.ram += dt;
+    } else if (tactic === 'block' && dec.chaser && !dec.chaser.finished) {
+      const ch = dec.chaser;
+      const chLat = track.nearest(ch.x, ch.y).lateral;
+      const want = clamp(chLat, -track.width * 0.3, track.width * 0.3);
+      const p2 = track.at(car.s + 95);
+      const bx = p2.x + p2.nx * want;
+      const by = p2.y + p2.ny * want;
+      const ang = Math.atan2(by - car.y, bx - car.x);
+      const dd = wrapAngle(ang - car.angle);
+      steer = clamp(dd * 2.6 + diff * 0.3, -1, 1);
+      gas = true;
+      if (G.tactics) G.tactics.block += dt;
+      // 封堵时故意挤一点车距，但不主动撞
+      if (Math.hypot(ch.x - car.x, ch.y - car.y) < 60) brake = false;
+    }
+
+    const gasOut = gas && (tactic !== 'race' ? true : blocked < 0.55);
+
+    // ---- 武器 ----
+    if (car.weapon === 'rocket' && car.ammo > 0 && Math.random() < dt * 0.35) {
+      const aheadCar = G.cars.find(c => c !== car && !c.finished &&
+        (c.progress - car.progress) > 0 && (c.progress - car.progress) < 180);
+      if (aheadCar) {
+        G.rockets.push({ x: car.x + Math.cos(car.angle) * 30, y: car.y + Math.sin(car.angle) * 30,
+          angle: car.angle, speed: 760, life: 2.0, owner: car });
+        car.ammo--; if (car.ammo <= 0) car.weapon = null;
+      }
+    }
+    if (car.weapon === 'turbo' && Math.random() < dt * 0.25) { car.boost = 1.4; car.weapon = null; }
+
+    car.blocked = blocked;
+    car.tactic = tactic;
+    return { steer: steer, gas: gasOut, brake: brake };
+  }
+
+  // ---------- 碰撞 ----------
+  function resolveCollisions(dt) {
+    for (let i = 0; i < G.cars.length; i++) {
+      for (let j = i + 1; j < G.cars.length; j++) {
+        const a = G.cars[i], b = G.cars[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy);
+        const minD = 34;
+        if (d < minD && d > 0.001) {
+          G.collisions = (G.collisions || 0) + 1;
+          const push = (minD - d) / 2;
+          const nx = dx / d, ny = dy / d;
+          a.x -= nx * push; a.y -= ny * push;
+          b.x += nx * push; b.y += ny * push;
+          a.speed *= 0.94; b.speed *= 0.94;
+          if (Math.random() < 0.02) spark((a.x + b.x) / 2, (a.y + b.y) / 2);
+        }
+      }
+    }
+
+    // 火箭
+    for (let i = G.rockets.length - 1; i >= 0; i--) {
+      const r = G.rockets[i];
+      r.x += Math.cos(r.angle) * r.speed * dt;
+      r.y += Math.sin(r.angle) * r.speed * dt;
+      r.life -= dt;
+      if (Math.random() < 0.7) G.particles.push({ x: r.x, y: r.y, vx: rand(-30, 30), vy: rand(-30, 30), life: 0.3, max: 0.3, r: 3, color: '255,80,180' });
+      let hit = false;
+      for (const c of G.cars) {
+        if (c === r.owner || c.finished) continue;
+        if (Math.hypot(c.x - r.x, c.y - r.y) < 26) {
+          c.health -= 34 / (c.armor || 1); c.speed *= 0.45; c.stun = 0.65;
+          hit = true;
+          explosion(c.x, c.y);
+          if (SND) { SND.explosion(); if (c.isPlayer) SND.damage(); }
+          if (c.health <= 0) { c.health = 100; c.speed = 0; showTaunt(pick(['CAR DAMAGED!', '#PS1CAR DAMAGED!'])); }
+          if (c.isPlayer) showTaunt(pick(TALK));
+          break;
+        }
+      }
+      const near = G.track.nearest(r.x, r.y);
+      if (hit || r.life <= 0 || Math.abs(near.lateral) > G.track.width * 0.8) G.rockets.splice(i, 1);
+    }
+
+    // 地雷
+    for (let i = G.mines.length - 1; i >= 0; i--) {
+      const m = G.mines[i];
+      m.life -= dt;
+      for (const c of G.cars) {
+        if (c.finished || c === m.owner) continue;
+        if (Math.hypot(c.x - m.x, c.y - m.y) < 24) {
+          c.health -= 26 / (c.armor || 1); c.speed *= 0.3; c.stun = 0.8;
+          explosion(m.x, m.y);
+          if (SND) { SND.explosion(); if (c.isPlayer) SND.damage(); }
+          m.life = -1;
+          if (c.isPlayer) showTaunt(pick(TALK));
+          break;
+        }
+      }
+      if (m.life <= 0) G.mines.splice(i, 1);
+    }
+
+    // 拾取
+    for (const pk of G.pickups) {
+      if (!pk.alive) { pk.respawn -= dt; if (pk.respawn <= 0) pk.alive = true; continue; }
+      for (const c of G.cars) {
+        if (c.finished) continue;
+        if (Math.hypot(c.x - pk.x, c.y - pk.y) < 28 * (c.pickupR || 1)) {
+          pk.alive = false; pk.respawn = 9;
+          if (SND && c.isPlayer) SND.pickup();
+          c.picked = (c.picked || 0) + 1;
+          c.weapon = pk.type;
+          c.ammo = pk.type === 'turbo' ? 1 : 3;
+          if (c.isPlayer) updateWeaponHUD();
+          break;
+        }
+      }
+    }
+  }
+
+  function spark(x, y) {
+    for (let i = 0; i < 6; i++) {
+      G.particles.push({ x, y, vx: rand(-90, 90), vy: rand(-90, 90), life: 0.35, max: 0.35, r: rand(1, 3), color: '255,220,140' });
+    }
+  }
+  function explosion(x, y) {
+    G.particles.push({ x, y, vx: 0, vy: 0, life: 0.55, max: 0.55, r: 46, color: '255,150,60', boom: true });
+    for (let i = 0; i < 14; i++) {
+      G.particles.push({ x, y, vx: rand(-220, 220), vy: rand(-220, 220), life: rand(0.3, 0.7), max: 0.7, r: rand(2, 6), color: '255,120,60' });
+    }
+  }
+
+  // ---------- UI ----------
+  function showTaunt(text) {
+    if (!text) return;
+    const el = document.getElementById('taunt');
+    el.textContent = text;
+    el.classList.remove('hidden');
+    G.tauntTimer = 3.2;
+  }
+  function showBanner(text) {
+    const el = document.getElementById('banner');
+    el.textContent = text;
+    el.classList.remove('hidden');
+    G.bannerTimer = 1.4;
+  }
+  function togglePause() {
+    if (G.state === 'racing') { G.state = 'paused'; if (SND) { SND.engineStop(); SND.skidStop(); } document.getElementById('pause').classList.remove('hidden'); }
+    else if (G.state === 'paused') { G.state = 'racing'; if (SND) SND.engineStart(); document.getElementById('pause').classList.add('hidden'); }
+  }
+
+  // ---------- 主循环 ----------
+  let last = performance.now();
+  let fpsAcc = 0, fpsFrames = 0, fpsShown = 0;
+  function frame(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    resizeCanvas();   // 每帧自愈：窗口/视口变化都能跟上
+    fpsAcc += dt; fpsFrames++;
+    if (fpsAcc >= 0.5) {
+      fpsShown = Math.round(fpsFrames / fpsAcc);
+      fpsAcc = 0; fpsFrames = 0;
+      const el = document.getElementById('fps');
+      if (el) el.textContent = fpsShown + ' FPS';
+    }
+    update(dt);
+    render(now / 1000);
+    requestAnimationFrame(frame);
+  }
+
+  function writeStats() {
+    try {
+      const p = G.player || {};
+      const t = G.tactics || {};
+      let aiPicked = 0;
+      if (G.cars) for (const c of G.cars) if (!c.isPlayer) aiPicked += (c.picked || 0);
+      const txt = 'COLL=' + (G.collisions || 0)
+        + ' BLOCK=' + (Number(t.block) || 0).toFixed(1)
+        + ' RAM=' + (Number(t.ram) || 0).toFixed(1)
+        + ' LOOT=' + (Number(t.loot) || 0).toFixed(1)
+        + ' AIPICK=' + aiPicked
+        + ' PPICK=' + (p.picked || 0)
+        + ' LAP=' + (p.lap || 0);
+      let d = document.getElementById('simstats');
+      if (!d) {
+        d = document.createElement('div');
+        d.id = 'simstats';
+        d.style.cssText = 'position:fixed;left:10px;bottom:10px;background:rgba(0,20,30,.92);color:#7dffb0;font:12px monospace;padding:8px 10px;z-index:99999;border:1px solid #2a6';
+        (document.body || document.documentElement).appendChild(d);
+      }
+      d.textContent = txt + (window.__WARMUP_ERR ? (' ERR: ' + window.__WARMUP_ERR) : '');
+      document.title = 'SIMTITLE ' + txt;
+    } catch (err) {
+      document.title = 'ERR ' + (err && err.message);
+    }
+  }
+
+  function update(dt) {
+    if (G.state === 'countdown') {
+      G.countdown -= dt;
+      const n = Math.ceil(G.countdown - 0.6);
+      if (n <= 3 && n >= 1 && G.bannerTimer <= 0) showBanner(String(n));
+      if (n !== G.lastBeep && n >= 1 && n <= 3) { G.lastBeep = n; if (SND) SND.countdownBeep(false); }
+      if (G.countdown <= 0.6 && G.bannerTimer <= 0) { showBanner(T('go')); if (SND) SND.countdownBeep(true); }
+      if (G.countdown <= 0) { G.state = 'racing'; }
+    }
+    if (G.state !== 'racing' && G.state !== 'countdown') return;
+
+    if (G.state === 'racing') G.raceTime += dt;
+
+    // 玩家输入
+    const p = G.player;
+    let steer = 0, gas = false, brake = false;
+    if (G.state === 'racing') {
+      if (KEYS['KeyA'] || KEYS['ArrowLeft'] || touch.left) steer -= 1;
+      if (KEYS['KeyD'] || KEYS['ArrowRight'] || touch.right) steer += 1;
+      gas = !!(KEYS['KeyW'] || KEYS['ArrowUp'] || touch.gas);
+      brake = !!(KEYS['KeyS'] || KEYS['ArrowDown'] || touch.brake);
+    }
+    for (const c of G.cars) {
+      if (c.finished) continue;
+      let inp;
+      if (c === p && !AUTOPLAY) inp = { steer, gas, brake };
+      else inp = aiInput(c, dt);
+      if (G.state === 'countdown') inp = { steer: 0, gas: false, brake: true };
+      c.update(dt, inp);
+    }
+    resolveCollisions(dt);
+
+    // 相机
+    const aheadX = p.x + Math.cos(p.angle) * Math.min(160, p.speed * 0.42);
+    const aheadY = p.y + Math.sin(p.angle) * Math.min(160, p.speed * 0.42);
+    G.camX = lerp(G.camX, aheadX, 1 - Math.pow(0.0009, dt));
+    G.camY = lerp(G.camY, aheadY, 1 - Math.pow(0.0009, dt));
+
+    // 粒子
+    for (let i = G.particles.length - 1; i >= 0; i--) {
+      const q = G.particles[i];
+      q.life -= dt;
+      if (!q.boom) { q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.96; q.vy *= 0.96; }
+      if (q.life <= 0) G.particles.splice(i, 1);
+    }
+
+    // HUD
+    if (G.state === 'racing') {
+      document.getElementById('raceTime').textContent = fmtTime(G.raceTime);
+      document.getElementById('lapNum').textContent = Math.max(1, Math.min(p.lap, LAPS));
+      document.getElementById('spdNum').textContent = Math.round(Math.abs(p.speed) * 0.72);
+      document.getElementById('posNum').textContent = positionOf(p);
+      document.getElementById('bestLap').textContent = T('best') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--:--.--');
+      const f = document.getElementById('fps');
+      if (f) f.textContent = fpsShown + ' FPS';
+      const hf = document.getElementById('healthFill');
+      hf.style.width = clamp(p.health, 0, 100) + '%';
+      hf.style.background = p.health > 55 ? 'linear-gradient(90deg,#28e07a,#8ef03a)'
+        : p.health > 25 ? 'linear-gradient(90deg,#e0c528,#f0a13a)' : 'linear-gradient(90deg,#e02828,#f06a3a)';
+      if (p.lap !== G.lastLapShown && p.lap <= LAPS) {
+        G.lastLapShown = p.lap;
+        showBanner(T('lap') + ' ' + p.lap);
+        if (SND) SND.lapChime();
+      }
+      // 引擎 / 打滑音频
+      if (SND && SND.ready) {
+        const ratio = clamp(Math.abs(p.speed) / p.maxSpeed, 0, 1);
+        const near = G.track.nearest(p.x, p.y);
+        const off = Math.abs(near.lateral) > G.track.width / 2 * 0.92;
+        SND.engineUpdate(ratio, gas ? 1 : 0, off);
+        if (p.stun > 0 || p.finished) { /* 撞击后引擎降噪 */ }
+        if (p.drift > 0.18 || off) { SND.skidStart(); SND.skidUpdate(Math.max(p.drift, off ? 0.5 : 0), off); }
+        else SND.skidStop();
+      }
+      // 超车台词
+      if (Math.random() < dt * 0.06) showTaunt(pick(TALK));
+    }
+
+    if (G.tauntTimer > 0) { G.tauntTimer -= dt; if (G.tauntTimer <= 0) document.getElementById('taunt').classList.add('hidden'); }
+    if (G.bannerTimer > 0) { G.bannerTimer -= dt; if (G.bannerTimer <= 0) document.getElementById('banner').classList.add('hidden'); }
+  }
+
+  function render(t) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#07080d';
+    ctx.fillRect(0, 0, VW, VH);
+    if (!G.track) return;
+
+    const Z = ZOOM;
+    ctx.save();
+    ctx.translate(VW / 2, VH / 2);
+    ctx.scale(Z, Z);
+    ctx.translate(-G.camX, -G.camY);
+
+    // 地图外区域用主题底色填满，避免出现黑边
+    if (G.map && G.map.theme) {
+      const halfW = (VW / Z) / 2 + 40, halfH = (VH / Z) / 2 + 40;
+      ctx.fillStyle = G.map.theme.grass;
+      ctx.fillRect(G.camX - halfW, G.camY - halfH, halfW * 2, halfH * 2);
+    }
+
+    // 预烘焙地图
+    if (G.map) {
+      ctx.drawImage(G.map.canvas, G.map.x, G.map.y);
+    }
+
+    // 拾取物
+    for (const pk of G.pickups) {
+      if (!pk.alive) continue;
+      Art.pickup(ctx, pk.x, pk.y, pk.type, t);
+    }
+    // 地雷
+    for (const m of G.mines) Art.mine(ctx, m.x, m.y, t);
+
+    // 爆炸（车下层）
+    for (const q of G.particles) {
+      if (q.boom) Art.explosion(ctx, q.x, q.y, q.r * (1.6 - q.life / q.max), q.life / q.max);
+    }
+
+    // 车影 + 车
+    const sorted = [...G.cars].sort((a, b) => a.y - b.y);
+    for (const c of sorted) {
+      Art.car(ctx, c.x, c.y, c.angle, c.driver,
+        { thrust: clamp(c.speed / c.maxSpeed, 0, 1), damage: 1 - c.health / 100, scale: c.isPlayer ? 1.1 : 1, braking: c.blocked > 0.5 });
+
+      if (!c.isPlayer) {
+        ctx.fillStyle = 'rgba(210,230,250,.6)';
+        ctx.font = '10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(c.driver.name, c.x, c.y - 34);
+      }
+    }
+
+    // 火箭 / 普通粒子
+    for (const r of G.rockets) Art.rocket(ctx, r.x, r.y, r.angle);
+    for (const q of G.particles) {
+      if (q.boom) continue;
+      const a = q.life / q.max;
+      ctx.fillStyle = 'rgba(' + q.color + ',' + a.toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.r * a, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+
+    // 暗角（缓存渐变）
+    if (!G._vg || G._vgW !== VW || G._vgH !== VH) {
+      const vg = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.35, VW / 2, VH / 2, VH * 0.95);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,.55)');
+      G._vg = vg; G._vgW = VW; G._vgH = VH;
+    }
+    ctx.fillStyle = G._vg;
+    ctx.fillRect(0, 0, VW, VH);
+
+    drawMinimap();
+  }
+
+  function drawMinimap() {
+    const pad = 16;
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    let size = Math.round(Math.min(150, Math.max(96, VH * 0.18)));
+    const bx = VW - size - pad, by = VH - size - pad - (coarse ? 92 : 0);
+
+    ctx.save();
+    ctx.beginPath();
+    Art.roundRect(ctx, bx, by, size, size, 8);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(8,14,20,.9)';
+    ctx.fillRect(bx, by, size, size);
+
+    if (G.map) {
+      const s2 = Math.min(size / G.map.w, size / G.map.h);
+      const dw = G.map.w * s2, dh = G.map.h * s2;
+      const ox = bx + (size - dw) / 2;
+      const oy = by + (size - dh) / 2;
+      ctx.drawImage(G.map.canvas, ox, oy, dw, dh);
+
+      // 车手位置
+      for (const c of G.cars) {
+        const px = ox + (c.x - G.map.x) * s2;
+        const py = oy + (c.y - G.map.y) * s2;
+        ctx.fillStyle = c.isPlayer ? '#ffffff' : c.driver.main;
+        ctx.beginPath(); ctx.arc(px, py, c.isPlayer ? 3.4 : 2.4, 0, TAU); ctx.fill();
+        if (c.isPlayer) {
+          ctx.strokeStyle = 'rgba(255,255,255,.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(px, py, 6.5, 0, TAU); ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(90,200,255,.45)';
+    ctx.lineWidth = 1.5;
+    Art.roundRect(ctx, bx, by, size, size, 8);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------- 菜单 / 生涯 / 车库 / 商店 ----------
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.add('hidden'), 1600);
+  }
+
+  function refreshTopbar() {
+    $('uiCash').textContent = '$ ' + Meta.data.cash.toLocaleString();
+    $('uiLevel').textContent = T('level') + ' ' + Meta.level() + ' · ' + Meta.data.xp + ' ' + T('xp');
+    $('uiRecord').textContent = Meta.data.wins + T('wins') + ' / ' + Meta.data.races + T('races');
+  }
+
+  function showView(name) {
+    ['home', 'quick', 'career', 'garage', 'shop', 'drivers'].forEach(v => {
+      const el = $('view-' + v);
+      if (el) el.classList.toggle('hidden', v !== name);
+    });
+    G.view = name;
+    refreshTopbar();
+  }
+
+  function renderHome() {
+    const st = Meta.champState('rookie');
+    const ch = Meta.champOf('rookie');
+    $('careerHint').textContent = st.done ? 'ROOKIE CUP 已完成，继续挑战正赛'
+      : (st.started ? ('进行中 · 第 ' + (st.event + 1) + '/' + ch.races + ' 场') : ch.desc);
+    $('garageHint').textContent = Meta.car.name + ' · ' + Meta.data.cars.length + ' ' + T('cars');
+    const s = Meta.stats();
+    $('currentCarInfo').textContent = T('current') + '  ' + s.name +
+      '   ' + T('speed') + ' ' + Math.round(s.speed) + '   ' + T('accel') + ' ' + Math.round(s.accel) +
+      '   ' + T('grip') + ' ' + s.handling.toFixed(2) + (s.startWeapon ? '   · 自带 ROCKET x' + s.startAmmo : '');
+  }
+
+  function renderCareer() {
+    const dv = $('careerDriver');
+    if (dv) {
+      const d = DRIVERS[G.selectedDriver];
+      dv.innerHTML =
+        '<div class="db-avatar" style="background:radial-gradient(circle at 35% 30%,' + d.light + ',' + d.main + ' 55%,' + d.dark + ')">' + d.num + '</div>' +
+        '<div class="db-text"><b>' + d.name + '</b><span>赞助商 ' + (d.sponsor || '-') + ' · ' + (d.perkText || '') +
+        ' · 生涯胜场 ' + Meta.driverWins(d.name) + '</span></div>' +
+        '<button class="db-change" id="changeDriver">换车手</button>';
+      const cb = document.getElementById('changeDriver');
+      if (cb) cb.onclick = () => {
+        if (SND) SND.uiClick();
+        G.driverReturn = 'career';
+        renderDrivers();
+        showView('drivers');
+      };
+    }
+    const box = $('champList');
+    box.innerHTML = '';
+    Meta.CHAMPS.forEach((ch, i) => {
+      const st = Meta.champState(ch.id);
+      const prev = i === 0 ? null : Meta.CHAMPS[i - 1];
+      const locked = prev ? !Meta.champState(prev.id).done : false;
+      const div = document.createElement('div');
+      div.className = 'champ' + (locked ? ' locked' : '');
+      const info = document.createElement('div');
+      info.innerHTML = '<h3>' + champName(ch) + '</h3><p>' + ch.desc + '</p>' +
+        '<div class="meta">' + (locked ? (T('lockedBy') + ' ' + champName(prev))
+          : (st.done ? T('done') : T('progress') + ' ' + st.event + '/' + ch.races)) + '</div>';
+      const btn = document.createElement('button');
+      btn.textContent = st.done ? T('replay') : (st.started ? T('cont') : T('start'));
+      btn.disabled = locked;
+      btn.onclick = () => { if (SND) SND.uiConfirm(); startCareerRace(ch.id); };
+      div.appendChild(info);
+      div.appendChild(btn);
+      box.appendChild(div);
+    });
+  }
+
+  function startCareerRace(champId) {
+    const st = Meta.champState(champId);
+    if (!st.started) Meta.startChamp(champId);
+    const ev = Meta.nextEvent(champId);
+    startRace(ev.track, { career: { champId: champId }, laps: ev.laps, skill: ev.skill });
+  }
+
+  function statBar(label, v) {
+    const w = Math.round(clamp(v, 0.04, 1) * 100);
+    return '<div class="statsbar"><span class="lbl">' + label + '</span>' +
+      '<span class="bar"><i style="width:' + w + '%"></i></span><span>' + w + '</span></div>';
+  }
+
+  function renderGarage() {
+    const ul = $('garageList');
+    ul.innerHTML = '';
+    Meta.data.cars.forEach(id => {
+      const car = Meta.get(id);
+      const li = document.createElement('li');
+      li.textContent = car.name + (id === Meta.data.currentCar ? ' ✓' : '');
+      li.className = id === Meta.data.currentCar ? 'active' : '';
+      li.onclick = () => {
+        Meta.selectCar(id);
+        if (SND) SND.uiClick();
+        renderGarage(); renderHome(); refreshTopbar();
+      };
+      ul.appendChild(li);
+    });
+    const s = Meta.stats();
+    $('garageCarName').textContent = s.name;
+    const u = Meta.upgOf(s.id);
+    $('garageStats').innerHTML =
+      statBar(T('speed'), (s.speed - 380) / 120) +
+      statBar(T('accel'), (s.accel - 300) / 130) +
+      statBar(T('grip'), (s.handling - 0.9) / 0.4) +
+      '<div class="detail">' + Meta.UPGRADES.engine.name + ' Lv.' + u.engine +
+      ' &nbsp;·&nbsp; ' + Meta.UPGRADES.tires.name + ' Lv.' + u.tires +
+      ' &nbsp;·&nbsp; ' + Meta.UPGRADES.weapon.name + ' Lv.' + u.weapon +
+      '<br>' + T('upgradeHint') + '</div>';
+  }
+
+  let shopTab = 'cars';
+
+  function renderShop() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === shopTab));
+    const ul = $('shopList');
+    ul.innerHTML = '';
+    if (shopTab === 'cars') {
+      Meta.CARS.forEach(car => {
+        const owned = Meta.data.cars.includes(car.id);
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.textContent = car.name;
+        const right = document.createElement('span');
+        right.style.cssText = 'display:flex;gap:10px;align-items:center';
+        const price = document.createElement('span');
+        price.style.color = owned ? '#7dffb0' : '#ffd479';
+        price.textContent = owned ? T('owned') : '$' + car.price;
+        right.appendChild(price);
+        if (!owned) {
+          const b = document.createElement('button');
+          b.textContent = T('buy');
+          b.style.cssText = 'padding:5px 14px;font-size:11px;letter-spacing:1px';
+          b.onclick = (e) => {
+            e.stopPropagation();
+            const r = Meta.buyCar(car.id);
+            toast(r.msg);
+            if (SND) SND.uiClick();
+            renderShop(); renderGarage(); renderHome(); refreshTopbar();
+          };
+          right.appendChild(b);
+        }
+        li.appendChild(label); li.appendChild(right);
+        li.onclick = () => {
+          $('shopDetail').innerHTML = '<b style="color:' + car.color + '">' + car.name + '</b><br>' + car.desc +
+            '<br><br>SPEED ' + car.speed + ' · ACCEL ' + car.accel + ' · GRIP ' + car.handling.toFixed(2) +
+            '<br>价格 $' + car.price;
+        };
+        ul.appendChild(li);
+      });
+      $('shopDetail').innerHTML = T('chooseItem') + '<br><br>' + T('current') + ': ' + Meta.car.name;
+    } else {
+      const carId = Meta.data.currentCar;
+      ['engine', 'tires', 'weapon'].forEach(slot => {
+        const up = Meta.UPGRADES[slot];
+        const lv = Meta.upgOf(carId)[slot];
+        const price = Meta.upgradePrice(carId, slot);
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.textContent = upgName(up) + '  ' + T('level') + ' ' + lv + '/3';
+        const right = document.createElement('span');
+        right.style.cssText = 'display:flex;gap:10px;align-items:center';
+        const priceEl = document.createElement('span');
+        priceEl.style.color = price == null ? '#8fa8bd' : '#ffd479';
+        priceEl.textContent = price == null ? T('max') : '$' + price;
+        right.appendChild(priceEl);
+        if (price != null) {
+          const b = document.createElement('button');
+          b.textContent = T('buy');
+          b.style.cssText = 'padding:5px 14px;font-size:11px;letter-spacing:1px';
+          b.onclick = (e) => {
+            e.stopPropagation();
+            const r = Meta.buyUpgrade(carId, slot);
+            toast(r.msg);
+            if (SND) SND.uiClick();
+            renderShop(); renderGarage(); renderHome(); refreshTopbar();
+          };
+          right.appendChild(b);
+        }
+        li.appendChild(label); li.appendChild(right);
+        li.onclick = () => {
+          $('shopDetail').innerHTML = '<b>' + up.name + '</b><br>' + up.desc +
+            '<br><br>当前等级 ' + lv + ' / 3' + (price != null ? ('<br>升级价格 $' + price) : '<br>已满级');
+        };
+        ul.appendChild(li);
+      });
+      $('shopDetail').innerHTML = '升级对象：' + Meta.car.name + '<br><br>' +
+        'ENGINE +速度/加速 · TIRES +转向 · WEAPONS 开局携带火箭';
+    }
+  }
+
+  function navClick(id, fn) {
+    const el = $(id);
+    if (!el) return;
+    el.onclick = () => { if (SND) SND.uiClick(); fn(); };
+  }
+
+  navClick('navCareer', () => { renderCareer(); showView('career'); });
+  navClick('navQuick', () => { buildQuickLists(); showView('quick'); });
+  navClick('navGarage', () => { renderGarage(); showView('garage'); });
+  navClick('navShop', () => { renderShop(); showView('shop'); });
+  navClick('backQuick', () => showView('home'));
+  navClick('backCareer', () => { renderHome(); showView('home'); });
+  navClick('backGarage', () => { renderHome(); showView('home'); });
+  navClick('backShop', () => { renderHome(); showView('home'); });
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => { shopTab = t.dataset.tab; if (SND) SND.uiClick(); renderShop(); };
+  });
+
+  // ---------- 车手选择（头像 + 排名） ----------
+  let driverSel = 0;
+  const DOLLAR = String.fromCharCode(36);
+
+  function rosterRanked() {
+    const rows = DRIVERS.map((d, i) => ({ d: d, i: i, p: Meta.profileOf(i) }));
+    rows.sort((a, b) =>
+      (b.p.champsWon - a.p.champsWon) ||
+      (b.p.wins - a.p.wins) ||
+      (b.p.xp - a.p.xp) ||
+      a.d.name.localeCompare(b.d.name));
+    rows.forEach((r, idx) => { r.rank = idx + 1; });
+    return rows;
+  }
+
+  function renderDrivers() {
+    driverSel = G.selectedDriver;
+    const ul = $('driverRoster');
+    ul.innerHTML = '';
+    rosterRanked().forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'roster-row' + (r.i === driverSel ? ' active' : '');
+      const rankCls = r.rank === 1 ? ' gold' : (r.rank <= 3 ? ' top' : '');
+
+      const rank = document.createElement('div');
+      rank.className = 'rr-rank' + rankCls;
+      rank.textContent = r.rank;
+
+      const pic = document.createElement('canvas');
+      pic.className = 'rr-pic';
+      pic.width = 88; pic.height = 88;
+      pic.getContext('2d').drawImage(Portrait.get(r.d), 0, 0, 88, 88);
+
+      const info = document.createElement('div');
+      info.className = 'rr-info';
+      info.innerHTML =
+        '<b>' + r.d.name + '</b>' +
+        '<span>' + (r.d.sponsor || '-') + '</span>' +
+        '<em>★' + r.p.champsWon + ' · ' + r.p.wins + T('wins') + ' / ' + r.p.races + T('races') + ' · ' + DOLLAR + r.p.cash + '</em>';
+
+      li.appendChild(rank);
+      li.appendChild(pic);
+      li.appendChild(info);
+      li.onclick = () => { driverSel = r.i; if (SND) SND.uiClick(); renderDrivers(); };
+      ul.appendChild(li);
+    });
+    renderDriverDetail();
+  }
+
+  function renderDriverDetail() {
+    const d = DRIVERS[driverSel];
+    const p = Meta.profileOf(driverSel);
+    const box = $('driverDetail');
+    box.innerHTML =
+      '<div class="dd-top">' +
+        '<canvas class="dd-pic" width="260" height="260"></canvas>' +
+        '<div class="dd-id"><b>' + d.name + '</b><span>#' + d.num + ' · ' + bodyName(d.body) + '</span></div>' +
+      '</div>' +
+      '<div class="dd-bio">' + ((isZh() && d.bioZh) ? d.bioZh : d.bio) + '</div>' +
+      '<div class="dd-line"><i>赞助商</i><b>' + (d.sponsor || '-') + '</b></div>' +
+      '<div class="dd-line"><i>特权</i><b class="perk">' + (d.perkText || '-') + '</b></div>' +
+      '<div class="dd-line"><i>战绩</i><b>★' + p.champsWon + ' 冠军 · ' + p.wins + ' 胜 / ' + p.races + ' 场</b></div>' +
+      '<div class="dd-line"><i>现金</i><b>' + DOLLAR + p.cash + ' · ' + T('level') + ' ' + (Math.floor(p.xp / 500) + 1) + '</b></div>' +
+      '<div class="dd-bars">' +
+        ddBar('攻击', d.traits.aggr, '#ff5c6e') +
+        ddBar('封堵', d.traits.block, '#4bd0ff') +
+        ddBar('抢道具', d.traits.loot, '#ffd479') +
+      '</div>';
+    const cv = box.querySelector('.dd-pic');
+    if (cv) cv.getContext('2d').drawImage(Portrait.get(d), 0, 0, 260, 260);
+  }
+
+  function ddBar(label, v, color) {
+    return '<div class="dd-bar"><i>' + label + '</i><span><b style="width:' +
+      Math.round(v * 100) + '%;background:' + color + '"></b></span><em>' +
+      Math.round(v * 100) + '</em></div>';
+  }
+
+  function buildQuickLists() {
+    const dl = $('driverList');
+    dl.className = 'drivergrid';
+    dl.innerHTML = '';
+    DRIVERS.forEach((d, i) => {
+      const li = document.createElement('li');
+      li.className = 'driver-card' + (i === G.selectedDriver ? ' active' : '');
+      li.innerHTML =
+        '<div class="dv-avatar" style="background:radial-gradient(circle at 35% 30%,' + d.light + ',' + d.main + ' 55%,' + d.dark + ')">' +
+          '<span>' + d.num + '</span></div>' +
+        '<div class="dv-name">' + d.name + '</div>' +
+        '<div class="dv-meta">$' + Meta.profileOf(i).cash + ' · ★' + Meta.driverWins(d.name) + '</div>' +
+        '<div class="dv-traits">' +
+          '<i title="aggression" style="width:' + Math.round(d.traits.aggr * 100) + '%;background:#ff5c6e"></i>' +
+        '</div>';
+      li.onclick = () => {
+        G.selectedDriver = i;
+        Meta.setDriver(i);
+        if (SND) SND.uiClick();
+        refreshTopbar();
+        buildQuickLists();
+      };
+      dl.appendChild(li);
+    });
+    const tl = $('trackList');
+    tl.className = 'trackgrid';
+    tl.innerHTML = '';
+    TRACKS.forEach((tr, i) => {
+      const li = document.createElement('li');
+      li.className = 'track-card' + (i === G.selectedTrack ? ' active' : '');
+      li.innerHTML = '<b>' + trackName(tr) + '</b><span>' + tr.width + '</span>';
+      li.onclick = () => { G.selectedTrack = i; if (SND) SND.uiClick(); buildQuickLists(); };
+      tl.appendChild(li);
+    });
+    const d = DRIVERS[G.selectedDriver];
+    const bioTxt = (isZh() && d.bioZh) ? d.bioZh : d.bio;
+    $('driverBio').innerHTML = '<b>' + d.name + '</b> · ' + bioTxt +
+      '<br><span style="color:#7fe3ff">赞助商 ' + (d.sponsor || '-') + '</span>' +
+      ' <span style="color:#ffd479">· ' + (d.perkText || '') + '</span>' +
+      ' <span style="opacity:.5">[' + T('aggr') + ' ' + Math.round(d.traits.aggr * 100) +
+      ' / ' + T('block') + ' ' + Math.round(d.traits.block * 100) +
+      ' / ' + T('loot') + ' ' + Math.round(d.traits.loot * 100) + ']</span>' +
+      ' <span style="opacity:.5">· 生涯胜场 ' + Meta.driverWins(d.name) + '</span>';
+  }
+
+  $('driverConfirm').onclick = () => {
+    G.selectedDriver = driverSel;
+    Meta.setDriver(driverSel);
+    if (SND) SND.uiConfirm();
+    refreshTopbar();
+    renderHome();
+    if (G.driverReturn === 'career') { renderCareer(); showView('career'); }
+    else showView('home');
+  };
+  $('driverBack').onclick = () => {
+    if (SND) SND.uiClick();
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=980">
+<title>K-RALLY 重制版</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="menu" class="overlay">
+    <div class="topbar">
+      <span class="cash" id="uiCash">$ 0</span>
+      <span class="lvl" id="uiLevel">LV 1 · 0 XP</span>
+      <span class="rec" id="uiRecord">0W / 0R</span>
+      <button id="langBtn" class="langbtn">中 / EN</button>
+    </div>
+
+    <!-- 首页 -->
+    <div class="view" id="view-home">
+      <div class="title">
+        <h1>K<span>-</span>RALLY</h1>
+        <p class="sub" data-i18n="subtitle">重制版 · 生涯原型</p>
+      </div>
+      <div class="cards">
+        <div class="card" id="navCareer">
+          <h3 data-i18n="career">生涯</h3>
+          <p id="careerHint">从 ROOKIE CUP 开始</p>
+        </div>
+        <div class="card" id="navQuick">
+          <h3 data-i18n="quick">快速比赛</h3>
+          <p data-i18n="quickDesc">随便跑一场，拿少量奖金</p>
+        </div>
+        <div class="card" id="navGarage">
+          <h3 data-i18n="garage">车库</h3>
+          <p id="garageHint">查看与升级你的车</p>
+        </div>
+        <div class="card" id="navShop">
+          <h3 data-i18n="shop">商店</h3>
+          <p data-i18n="shopDesc">买车 / 买升级</p>
+        </div>
+      </div>
+      <div class="currentcar" id="currentCarInfo"></div>
+    </div>
+
+    <!-- 车手选择（原作风格：头像 + 排名） -->
+    <div class="view hidden" id="view-drivers">
+      <h2 class="vtitle" data-i18n="driversTitle">车手选择</h2>
+      <div class="drvwrap">
+        <div class="drvroster"><ul id="driverRoster"></ul></div>
+        <div class="drvdetail" id="driverDetail"></div>
+      </div>
+      <div class="btnrow">
+        <button id="driverConfirm" data-i18n="useDriver">选用该车手</button>
+        <button class="ghost" id="driverBack" data-i18n="back">返回</button>
+      </div>
+    </div>
+
+    <!-- 快速赛 -->
+    <div class="view hidden" id="view-quick">
+      <h2 class="vtitle" data-i18n="quick">快速比赛</h2>
+      <div class="row">
+        <div class="panel">
+          <h2 data-i18n="driver">车手</h2>
+          <ul id="driverList"></ul>
+        </div>
+        <div class="panel">
+          <h2 data-i18n="track">赛道</h2>
+          <ul id="trackList"></ul>
+        </div>
+      </div>
+      <div class="bio" id="driverBio"></div>
+      <div class="btnrow">
+        <button id="startBtn" data-i18n="startRace">开始比赛</button>
+        <button class="ghost" id="backQuick" data-i18n="back">返回</button>
+      </div>
+    </div>
+
+    <!-- 生涯 -->
+    <div class="view hidden" id="view-career">
+      <h2 class="vtitle" data-i18n="career">生涯</h2>
+      <div class="driverbar" id="careerDriver"></div>
+      <div class="champs" id="champList"></div>
+      <div class="btnrow"><button class="ghost" id="backCareer" data-i18n="back">返回</button></div>
+    </div>
+
+    <!-- 车库 -->
+    <div class="view hidden" id="view-garage">
+      <h2 class="vtitle" data-i18n="garage">车库</h2>
+      <div class="row wide">
+        <div class="panel"><h2>你的车</h2><ul id="garageList"></ul></div>
+        <div class="panel grow"><h2 id="garageCarName" data-i18n="statsTitle">属性</h2><div id="garageStats"></div></div>
+      </div>
+      <div class="btnrow"><button class="ghost" id="backGarage" data-i18n="back">返回</button></div>
+    </div>
+
+    <!-- 商店 -->
+    <div class="view hidden" id="view-shop">
+      <h2 class="vtitle" data-i18n="shop">商店</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="cars" data-i18n="tabCars">车辆</button>
+        <button class="tab" data-tab="upg" data-i18n="tabUpg">升级</button>
+      </div>
+      <div class="row wide">
+        <div class="panel grow"><ul id="shopList"></ul></div>
+        <div class="panel"><h2 data-i18n="detailTitle">详情</h2><div id="shopDetail" class="detail">选择一件商品</div></div>
+      </div>
+      <div class="btnrow"><button class="ghost" id="backShop" data-i18n="back">返回</button></div>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+    <p class="hint" data-i18n="hint">WASD / 方向键 驾驶 · 空格 开火 · Shift 弃武器 · P 暂停 · M 静音</p>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
+      <div class="time" id="raceTime">0:00.00</div>
+      <div class="best" id="bestLap">BEST --:--.--</div>
+      <div class="best" id="fps" style="color:#4b6579">-- FPS</div>
+    </div>
+    <div class="hud-right">
+      <div class="pos"><span id="posNum">4</span><small>/4</small></div>
+      <div class="speed"><span id="spdNum">0</span><small>km/h</small></div>
+    </div>
+    <div class="weapon" id="weaponBox"><span id="weaponName">--</span><small id="weaponAmmo"></small></div>
+    <div class="healthbar"><i id="healthFill"></i></div>
+    <div id="taunt" class="taunt hidden"></div>
+    <div id="banner" class="banner hidden"></div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <h1 data-i18n="pausedTitle">暂停</h1>
+    <button id="resumeBtn" data-i18n="resume">继续</button>
+    <button id="quitBtn" data-i18n="back">返回</button>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <h1 id="resultTitle">FINISH</h1>
+    <div class="stats" id="resultStats"></div>
+    <div class="rewards" id="resultRewards"></div>
+    <div class="btnrow">
+      <button id="againBtn">继续</button>
+      <button class="ghost" id="menuBtn" data-i18n="menu">主菜单</button>
+    </div>
+  </div>
+
+  <div id="touch" class="touch hidden">
+    <div class="pad">
+      <button id="tLeft">&#9664;</button>
+      <button id="tRight">&#9654;</button>
+    </div>
+    <div class="pad">
+      <button id="tBrake" data-i18n="btnBrake">刹车</button>
+      <button id="tGas" data-i18n="btnGas">油门</button>
+      <button id="tFire" data-i18n="btnFire">开火</button>
+    </div>
+  </div>
+
+<script>
+window.addEventListener('error', function (e) {
+  var d = document.getElementById('errbox');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'errbox';
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#500;color:#fff;font:13px monospace;padding:8px;z-index:9999;white-space:pre-wrap';
+    document.body.appendChild(d);
+  }
+  d.textContent += (e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || 0) + '\n';
+}, true);
+</script>
+<script src="js/i18n.js"></script>
+<script src="content/strings.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/drivers.js"></script>
+<script src="js/portrait.js"></script>
+<script src="js/track.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

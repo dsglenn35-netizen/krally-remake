@@ -1,0 +1,12 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>portraits</title>
+<style>body{background:#0a0f16;margin:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px}</style></head><body>
+<script src="js/drivers.js"></script>
+<script src="js/portrait.js"></script>
+<script>
+DRIVERS.forEach(d=>{
+  const c=document.createElement('canvas');
+  c.width=96; c.height=96;
+  c.getContext('2d').drawImage(Portrait.get(d),0,0,96,96);
+  document.body.appendChild(c);
+});
+</script></body></html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>生涯经济自检</title>
+<style>body{background:#0b0d16;color:#cfe8ff;font:14px/1.7 Consolas,monospace;padding:22px}
+h1{font-size:18px;color:#6ee7ff}.ok{color:#4ade80}.bad{color:#f87171}#sum{margin-top:14px;font-size:16px;color:#ffd479}</style>
+</head><body>
+<h1>生涯 / 商店 / 升级 逻辑自检</h1>
+<div id="log"></div>
+<div id="sum">running…</div>
+<script src="js/meta.js"></script>
+<script>
+const out = document.getElementById('log');
+let pass = 0, fail = 0;
+function chk(name, cond, extra) {
+  const ok = !!cond;
+  if (ok) pass++; else fail++;
+  out.insertAdjacentHTML('beforeend', '<div class="' + (ok ? 'ok' : 'bad') + '">' +
+    (ok ? 'PASS ' : 'FAIL ') + name + (extra ? '  [' + extra + ']' : '') + '</div>');
+}
+
+Meta.reset();
+const d = Meta.data;
+chk('初始现金 400', d.cash === 400, 'cash=' + d.cash);
+chk('初始只有 KITE', d.cars.length === 1 && d.cars[0] === 'kite');
+chk('现金不足时买不了 VIPER', Meta.buyCar('viper').ok === false);
+
+const s0 = Meta.stats();
+chk('KITE 基础速度 402', s0.speed === 402, 'speed=' + s0.speed);
+
+// --- ROOKIE CUP 三场 ---
+Meta.startChamp('rookie');
+const beforeCash = d.cash;
+Meta.finishEvent('rookie', 1);
+Meta.finishEvent('rookie', 2);
+const res3 = Meta.finishEvent('rookie', 1);
+chk('ROOKIE CUP 完成', Meta.champState('rookie').done === true, 'event=' + Meta.champState('rookie').event);
+chk('总奖金入账', d.cash > beforeCash, beforeCash + ' -> ' + d.cash);
+chk('冠军奖励只发一次', res3.champDone === true && res3.prize.cash === 800, 'prize=' + res3.prize.cash);
+chk('获得 XP', d.xp > 0, 'xp=' + d.xp);
+chk('等级提升', Meta.level() >= 2, 'lv=' + Meta.level());
+
+// --- 买车 ---
+const buy = Meta.buyCar('viper');
+chk('有钱后买到 VIPER', buy.ok === true, buy.msg);
+chk('拥有 2 辆车', d.cars.length === 2);
+const cashAfterCar = d.cash;
+
+// --- 升级（先补足资金，模拟继续跑比赛赚钱）---
+d.cash = 20000;
+Meta.selectCar('viper');
+chk('切换到 VIPER', Meta.data.currentCar === 'viper');
+const speedBefore = Meta.stats().speed;
+const up = Meta.buyUpgrade('viper', 'engine');
+chk('ENGINE 升级成功', up.ok === true, up.msg);
+chk('速度 +16', Meta.stats().speed === speedBefore + 16, speedBefore + ' -> ' + Meta.stats().speed);
+chk('扣款正确', d.cash === 20000 - 600, 'cash=' + d.cash);
+
+Meta.buyUpgrade('viper', 'engine');
+Meta.buyUpgrade('viper', 'engine');
+chk('ENGINE 满级 3', Meta.upgOf('viper').engine === 3);
+chk('满级后拒绝再买', Meta.buyUpgrade('viper', 'engine').ok === false);
+
+const grip = Meta.stats().handling;
+Meta.buyUpgrade('viper', 'tires');
+chk('TIRES 提升抓地', Meta.stats().handling > grip, grip.toFixed(2) + ' -> ' + Meta.stats().handling.toFixed(2));
+
+Meta.buyUpgrade('viper', 'weapon');
+const ws = Meta.stats();
+chk('WEAPONS 提供开局火箭', ws.startWeapon === 'rocket' && ws.startAmmo === 1, ws.startWeapon + ' x' + ws.startAmmo);
+
+// --- 赛事推进 ---
+Meta.startChamp('champ');
+const ev2 = Meta.nextEvent('champ');
+chk('冠军赛赛道/圈数有效', ev2.track >= 0 && ev2.track < 2 && ev2.laps === 3, 'track=' + ev2.track + ' laps=' + ev2.laps);
+chk('三档锦标赛共 3 个', Meta.CHAMPS.length === 3);
+
+// --- 存档往返 ---
+Meta.save();
+const snapshot = JSON.parse(JSON.stringify(d));
+Meta.reset();
+chk('reset 清空进度', Meta.data.cash === 400 && Meta.data.cars.length === 1);
+d.cash = snapshot.cash; d.cars = snapshot.cars; Meta.save();
+
+document.getElementById('sum').textContent = pass + ' passed, ' + fail + ' failed';
+document.title = 'META_RESULT ' + pass + '/' + (pass + fail);
+</script></body></html>

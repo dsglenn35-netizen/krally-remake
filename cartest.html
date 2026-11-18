@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>cars</title>
+<style>body{background:#1a2028;margin:0;display:flex;flex-wrap:wrap;gap:10px;padding:12px}</style></head><body>
+<script src="js/drivers.js"></script>
+<script src="js/art.js"></script>
+<script>
+const cvs = [];
+DRIVERS.slice(0,6).forEach((d,i)=>{
+  const sp = Art.getCarSprite(d);
+  const c = document.createElement('canvas');
+  const scale = 1.6;
+  c.width = sp.width/3*scale; c.height = sp.height/3*scale;
+  const g = c.getContext('2d');
+  g.drawImage(sp, 0, 0, c.width, c.height);
+  document.body.appendChild(c);
+});
+</script></body></html>

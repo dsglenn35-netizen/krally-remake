@@ -1,0 +1,75 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>t</title></head><body>
+<div id="out" style="font:13px monospace;color:#0f0;background:#000;padding:8px;white-space:pre"></div>
+<script src="js/drivers.js"></script>
+<script src="js/meta.js"></script>
+<script>
+const log = [];
+let pass = 0, fail = 0;
+function ok(cond, msg) { if (cond) { pass++; } else { fail++; log.push('FAIL: ' + msg); } }
+
+ok(DRIVERS.length === 14, 'roster size 14, got ' + DRIVERS.length);
+
+const sponsorSeen = new Set();
+DRIVERS.forEach(d => {
+  ok(!!d.perk, d.name + ' has perk');
+  const p = d.perk || {};
+  ['speed','accel','grip','armor','prize','xp','pickup'].forEach(k => {
+    ok(typeof p[k] === 'number' && p[k] > 0.5 && p[k] < 1.6, d.name + '.' + k + ' sane (' + p[k] + ')');
+  });
+  ok(!!d.sponsor && d.sponsor.length > 1, d.name + ' sponsor');
+  ok(!!d.perkText, d.name + ' perkText');
+  ok(!!d.body, d.name + ' body style');
+  sponsorSeen.add(d.sponsor);
+});
+ok(sponsorSeen.size === 14, 'sponsors unique, got ' + sponsorSeen.size);
+
+// 有效属性计算（模拟 startRace）
+function effective(idx) {
+  Meta.load();
+  const base = { speed: 402, accel: 330, handling: 1.0 };
+  const p = DRIVERS[idx].perk;
+  return {
+    speed: base.speed * p.speed,
+    accel: base.accel * p.accel,
+    handling: base.handling * p.grip,
+    armor: p.armor,
+  };
+}
+const jurij = effective(0);
+const rusty = effective(3);
+ok(jurij.speed > 402, 'JURIJ faster than base (' + jurij.speed.toFixed(1) + ')');
+ok(rusty.armor > jurij.armor, 'RUSTY tankier than JURIJ');
+
+// 奖金乘区
+const fixer = DRIVERS.find(d => d.name === 'FIXER');
+const fixedPrize = Math.round(600 * fixer.perk.prize);
+ok(fixedPrize === 708, 'FIXER prize 600 -> 708, got ' + fixedPrize);
+const thugs = DRIVERS.find(d => d.name === 'THUGS');
+ok(Math.round(600 * thugs.perk.prize) === 540, 'THUGS prize 600 -> 540');
+
+// 存档持久化
+Meta.setDriver(5);
+ok(Meta.driverIdx === 5, 'driverIdx saved, got ' + Meta.driverIdx);
+ok(Meta.profileOf(5).cash !== undefined, 'profile for driver 5 exists');
+
+// 每个车手独立经济
+const before = Meta.profileOf(0).cash;
+Meta.profileOf(0).cash += 999;
+Meta.save();
+Meta.setDriver(1);
+ok(Meta.profileOf(1).cash === 400, 'driver 2 cash isolated (400), got ' + Meta.profileOf(1).cash);
+Meta.setDriver(0);
+ok(Meta.profileOf(0).cash === before + 999, 'driver 1 keeps own cash');
+Meta.profileOf(0).cash = before;
+Meta.save();
+Meta.setDriver(5);
+Meta.addDriverWin('KIDDO');
+ok(Meta.driverWins('KIDDO') === 1, 'driver win recorded');
+Meta.addDriverWin('KIDDO');
+ok(Meta.driverWins('KIDDO') === 2, 'driver win increments');
+ok(Meta.profileOf('JURIJ').champsWon === 0, 'other driver wins untouched');
+
+document.getElementById('out').textContent =
+  'PASS ' + pass + ' / FAIL ' + fail + '\n' + log.join('\n');
+document.title = 'RES ' + pass + '/' + (pass + fail);
+</script></body></html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>音效自检</title>
+<style>
+ body{background:#0b0d16;color:#cfe8ff;font:14px/1.6 Consolas,monospace;padding:20px}
+ h1{font-size:18px;color:#6ee7ff;margin-bottom:10px}
+ table{border-collapse:collapse;margin-top:10px}
+ td,th{border:1px solid #23445e;padding:4px 10px;text-align:left}
+ .ok{color:#4ade80}.bad{color:#f87171}
+ #summary{margin-top:14px;font-size:16px}
+</style>
+</head>
+<body>
+<h1>K-RALLY 音效自检</h1>
+<div id="ctxstate">AudioContext: -</div>
+<table id="tbl"><thead><tr><th>音效</th><th>峰值 RMS</th><th>结果</th></tr></thead><tbody></tbody></table>
+<div id="summary">测试中…</div>
+<script src="js/audio.js"></script>
+<script>
+(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  Sound.init();
+  const ctx = Sound.context;
+  document.getElementById('ctxstate').textContent = 'AudioContext: ' + (ctx ? ctx.state : 'unavailable') + '  sampleRate=' + (ctx ? ctx.sampleRate : '-');
+  if (!ctx) { document.getElementById('summary').textContent = 'AudioContext 不可用'; return; }
+  if (ctx.state === 'suspended') await ctx.resume();
+
+  const an = Sound.attachAnalyser();
+  const buf = new Float32Array(an.fftSize);
+
+  async function measure(name, fn) {
+    fn();
+    let peak = 0;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 650) {
+      an.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      peak = Math.max(peak, Math.sqrt(sum / buf.length));
+      await sleep(30);
+    }
+    const row = document.createElement('tr');
+    const ok = peak > 0.0005;
+    row.innerHTML = '<td>' + name + '</td><td>' + peak.toFixed(5) + '</td><td class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? 'OK' : 'SILENT') + '</td>';
+    document.querySelector('#tbl tbody').appendChild(row);
+    return ok;
+  }
+
+  const tests = [
+    ['UI click', () => Sound.uiClick()],
+    ['UI confirm', () => Sound.uiConfirm()],
+    ['倒计时 beep', () => Sound.countdownBeep(false)],
+    ['GO beep', () => Sound.countdownBeep(true)],
+    ['单圈提示', () => Sound.lapChime()],
+    ['拾取', () => Sound.pickup()],
+    ['火箭发射', () => Sound.rocket()],
+    ['布雷', () => Sound.mineDrop()],
+    ['爆炸', () => Sound.explosion()],
+    ['受损', () => Sound.damage()],
+    ['完赛', () => Sound.finish(true)],
+    ['音乐循环', () => Sound.musicStart()],
+  ];
+  let pass = 0;
+  for (const [n, f] of tests) if (await measure(n, f)) pass++;
+  Sound.musicStop();
+
+  // 引擎声（持续）
+  Sound.engineStart();
+  const engOk = await measure('引擎（速度 0.8）', () => Sound.engineUpdate(0.8, 1, false));
+  Sound.engineStop();
+  if (engOk) pass++;
+
+  document.getElementById('summary').textContent = pass + ' / ' + (tests.length + 1) + ' 项有实际音频输出';
+  document.title = 'AUDIO_RESULT ' + pass + '/' + (tests.length + 1);
+})();
+</script>
+</body>
+</html>
