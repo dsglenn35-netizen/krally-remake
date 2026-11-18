@@ -3,6 +3,9 @@
 用解包出的原作文本 + 完全重画的程序化美术 + 程序化音频，从零实现的可玩原型。
 含生涯模式、车库、商店、车辆升级、AI 战术层。
 
+> 仓库：https://github.com/dsglenn35-netizen/krally-remake
+> 发布：https://github.com/dsglenn35-netizen/krally-remake/releases/tag/v0.1.0
+
 ## 运行
 
 | 方式 | 命令 |
