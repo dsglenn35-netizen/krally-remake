@@ -1,6 +1,6 @@
 // art.js - 写实俯视车辆 + 特效（全部程序化绘制）
 const Art = (() => {
-  const SS = 3;                 // 精灵超采样倍数
+  const SS = 4;                 // 精灵超采样倍数
   let carShadowSprite = null;
   const spriteCache = new Map();
 
@@ -57,20 +57,29 @@ const Art = (() => {
 
     // ---- 轮胎 ----
     function tire(x, y, len) {
+      // 轮胎：柱面明暗 + 胎面花纹 + 轮毂
       const gx = g.createLinearGradient(x, 0, x + 7, 0);
-      gx.addColorStop(0, '#08090b');
-      gx.addColorStop(0.5, '#1b1d21');
-      gx.addColorStop(1, '#0a0b0d');
+      gx.addColorStop(0, '#050607');
+      gx.addColorStop(0.35, '#26282d');
+      gx.addColorStop(0.58, '#15171b');
+      gx.addColorStop(1, '#07080a');
       g.fillStyle = gx;
-      roundRect(g, x, y, 7, len, 2.4); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.08)';
-      g.lineWidth = 0.5;
-      for (let i = 1; i < 6; i++) {
+      roundRect(g, x, y, 7, len, 2.2); g.fill();
+      g.save();
+      roundRect(g, x, y, 7, len, 2.2); g.clip();
+      g.globalAlpha = 0.55;
+      g.strokeStyle = '#000';
+      g.lineWidth = 0.45;
+      for (let i = 1; i < 9; i++) {
         g.beginPath();
-        g.moveTo(x + 0.8, y + (len / 6) * i);
-        g.lineTo(x + 6.2, y + (len / 6) * i);
+        g.moveTo(x, y + (len / 9) * i);
+        g.lineTo(x + 7, y + (len / 9) * i + 0.5);
         g.stroke();
       }
+      g.globalAlpha = 0.30;
+      g.fillStyle = '#b8c2cc';
+      g.fillRect(x + 2.6, y + len * 0.24, 1.8, len * 0.52);
+      g.restore();
     }
 
     const wl = B.wheelL;
@@ -110,23 +119,48 @@ const Art = (() => {
     g.fillStyle = paint;
     g.fill();
 
-    // 车漆内的细微条纹（金属感）
+    // 车漆细节：金属颗粒 + 曲面明暗 + 环境光遮蔽 + 镜面高光
     g.save();
     bodyPath(); g.clip();
+    // 金属颗粒
     g.globalAlpha = 0.05;
-    g.fillStyle = '#fff';
-    for (let i = -Wd; i < Wd; i += 2.2) {
-      g.fillRect(i, -L, 0.7, L * 2);
+    for (let i = 0; i < 1400; i++) {
+      g.fillStyle = Math.random() < 0.5 ? '#ffffff' : '#000000';
+      g.fillRect(-Wd + Math.random() * Wd * 2, -L + Math.random() * L * 2, 0.6, 0.6);
     }
     g.globalAlpha = 1;
-    // 车身暗部（前后收边）
+    // 横向曲面明暗（模拟圆柱受光）
+    const curve = g.createLinearGradient(-Wd, 0, Wd, 0);
+    curve.addColorStop(0, 'rgba(0,0,0,.42)');
+    curve.addColorStop(0.20, 'rgba(0,0,0,0)');
+    curve.addColorStop(0.5, 'rgba(255,255,255,.10)');
+    curve.addColorStop(0.80, 'rgba(0,0,0,0)');
+    curve.addColorStop(1, 'rgba(0,0,0,.48)');
+    g.fillStyle = curve;
+    g.fillRect(-Wd, -L, Wd * 2, L * 2);
+    // 前后收边（AO）
     const edge = g.createLinearGradient(0, -L, 0, L);
-    edge.addColorStop(0, 'rgba(0,0,0,.35)');
-    edge.addColorStop(0.12, 'rgba(0,0,0,0)');
-    edge.addColorStop(0.85, 'rgba(0,0,0,0)');
-    edge.addColorStop(1, 'rgba(0,0,0,.45)');
+    edge.addColorStop(0, 'rgba(0,0,0,.50)');
+    edge.addColorStop(0.10, 'rgba(0,0,0,0)');
+    edge.addColorStop(0.90, 'rgba(0,0,0,0)');
+    edge.addColorStop(1, 'rgba(0,0,0,.55)');
     g.fillStyle = edge;
     g.fillRect(-Wd, -L, Wd * 2, L * 2);
+    // 左侧镜面高光
+    g.globalAlpha = 0.55;
+    g.strokeStyle = 'rgba(255,255,255,.85)';
+    g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(-Wd + 2.4, -L * 0.55);
+    g.quadraticCurveTo(-Wd + 1.4, 0, -Wd + 2.6, L * 0.6);
+    g.stroke();
+    // 右侧轮廓光
+    g.globalAlpha = 0.30;
+    g.lineWidth = 0.9;
+    g.beginPath();
+    g.moveTo(Wd - 2.2, -L * 0.5);
+    g.quadraticCurveTo(Wd - 3.2, 0, Wd - 2.4, L * 0.55);
+    g.stroke();
     g.restore();
 
     // 车身描边

@@ -214,3 +214,32 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .dd-bar span { flex:1; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 .dd-bar span b { display:block; height:100%; }
 .dd-bar em { width:22px; text-align:right; font-style:normal; color:#cfe6f5; }
+/* 发车界面 */
+.lineup { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; background:rgba(4,8,14,.72); z-index:40; }
+.lu-title { margin:0; font-size:22px; letter-spacing:6px; color:#eaf6ff; text-shadow:0 0 18px rgba(60,200,255,.5); }
+.lu-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.lu-row { display:grid; grid-template-columns:26px 64px 190px 40px; align-items:center; gap:12px;
+  background:rgba(16,26,40,.85); border:1px solid rgba(70,110,150,.3); border-radius:10px; padding:7px 14px; }
+.lu-row.me { border-color:#3fd2ff; box-shadow:0 0 20px rgba(60,200,255,.3); }
+.lu-pos { font-family:'Arial Narrow', Arial; font-weight:700; font-size:19px; color:#8fb6cf; text-align:center; }
+.lu-row.me .lu-pos { color:#3fd2ff; }
+.lu-pic { width:64px; height:64px; border-radius:9px; display:block; }
+.lu-name { font-size:14px; letter-spacing:1px; color:#e2eefb; }
+.lu-name em { font-style:normal; font-size:10px; color:#062430; background:#3fd2ff; padding:1px 6px; border-radius:4px; margin-left:6px; }
+.lu-num { font-size:11px; color:#7fa3bb; text-align:right; }
+.lu-hint { font-size:12px; color:#8fb6cf; letter-spacing:2px; }
+
+/* 名次条 */
+.ladder { position:fixed; left:14px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:5px; z-index:20; }
+.ld-row { display:grid; grid-template-columns:16px 30px 1fr; align-items:center; gap:7px;
+  background:rgba(10,18,28,.72); border:1px solid rgba(70,110,150,.22); border-radius:7px; padding:3px 7px 3px 4px; }
+.ld-row.me { border-color:rgba(63,210,255,.7); background:rgba(16,40,58,.85); }
+.ld-pos { font-family:'Arial Narrow', Arial; font-weight:700; font-size:12px; color:#7fa3bb; text-align:center; }
+.ld-row.me .ld-pos { color:#3fd2ff; }
+.ld-pic { width:30px; height:30px; border-radius:5px; display:block; }
+.ld-info { display:flex; flex-direction:column; gap:2px; min-width:64px; }
+.ld-info b { font-size:9px; letter-spacing:.4px; color:#cfe4f5; font-weight:600; }
+.ld-track { display:block; height:3px; background:rgba(255,255,255,.12); border-radius:2px; overflow:hidden; }
+.ld-bar { display:block; height:100%; background:linear-gradient(90deg,#2ad0ff,#7ef0c0); }
+.ld-row.me .ld-bar { background:linear-gradient(90deg,#ffd479,#ff8fc4); }

@@ -114,6 +114,16 @@
     <p class="hint" data-i18n="hint">WASD / 方向键 驾驶 · 空格 开火 · Shift 弃武器 · P 暂停 · M 静音</p>
   </div>
 
+  <!-- 发车界面 -->
+  <div class="lineup hidden" id="lineup">
+    <h2 class="lu-title" data-i18n="gridTitle">发车顺序</h2>
+    <ul class="lu-list" id="lineupList"></ul>
+    <div class="lu-hint" id="lineupHint">准备起步…</div>
+  </div>
+
+  <!-- 名次条 -->
+  <div class="ladder hidden" id="ladder"></div>
+
   <div id="hud" class="hidden">
     <div class="hud-left">
       <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
@@ -195,7 +205,7 @@ const I18N = (() => {
       prize: '奖金', xp: '经验', champDone: '锦标赛完成',
       rocket: '火箭', mine: '地雷', turbo: '涡轮', none: '--',
       hint: 'WASD / 方向键 驾驶 · 空格 开火 · Shift 弃武器 · P 暂停 · M 静音',
-      spaceKey: '空格', aggr: '攻击', block: '封堵', loot: '抢道具', lapLabel: '圈', pausedTitle: '暂停', statsTitle: '属性', tabCars: '车辆', tabUpg: '升级',
+      spaceKey: '空格', gridTitle: '发车顺序', gridHint: '准备起步…', you: '你', gridTitle: '发车顺序', gridHint: '准备起步…', you: '你', aggr: '攻击', block: '封堵', loot: '抢道具', lapLabel: '圈', pausedTitle: '暂停', statsTitle: '属性', tabCars: '车辆', tabUpg: '升级',
       detailTitle: '详情', btnBrake: '刹车', btnGas: '油门', btnFire: '开火',
       subtitle: '重制版 · 生涯原型', turboShout: '涡轮加速!', boostShout: '加速!',
       bodySport: '跑车', bodyMuscle: '肌肉车', bodySedan: '轿车', bodyCompact: '小型车',
@@ -222,7 +232,7 @@ const I18N = (() => {
       prize: 'prize', xp: 'XP', champDone: 'CHAMPIONSHIP COMPLETE',
       rocket: 'ROCKET', mine: 'MINE', turbo: 'TURBO', none: '--',
       hint: 'WASD / Arrows drive · SPACE fire · SHIFT drop · P pause · M mute',
-      spaceKey: 'SPACE', aggr: 'AGGR', block: 'BLOCK', loot: 'LOOT', lapLabel: 'LAP', pausedTitle: 'PAUSED', statsTitle: 'STATS', tabCars: 'CARS', tabUpg: 'UPGRADES',
+      spaceKey: 'SPACE', gridTitle: 'STARTING GRID', gridHint: 'Get ready…', you: 'YOU', gridTitle: 'STARTING GRID', gridHint: 'Get ready…', you: 'YOU', aggr: 'AGGR', block: 'BLOCK', loot: 'LOOT', lapLabel: 'LAP', pausedTitle: 'PAUSED', statsTitle: 'STATS', tabCars: 'CARS', tabUpg: 'UPGRADES',
       detailTitle: 'DETAIL', btnBrake: 'BRAKE', btnGas: 'GAS', btnFire: 'FIRE',
       subtitle: 'REMAKE · CAREER PROTOTYPE', turboShout: 'TURBO!', boostShout: 'BOOST!',
       bodySport: 'SPORT', bodyMuscle: 'MUSCLE', bodySedan: 'SEDAN', bodyCompact: 'COMPACT',
@@ -1443,7 +1453,7 @@ const Sound = (() => {
 <script>
 // art.js - 写实俯视车辆 + 特效（全部程序化绘制）
 const Art = (() => {
-  const SS = 3;                 // 精灵超采样倍数
+  const SS = 4;                 // 精灵超采样倍数
   let carShadowSprite = null;
   const spriteCache = new Map();
 
@@ -1500,20 +1510,29 @@ const Art = (() => {
 
     // ---- 轮胎 ----
     function tire(x, y, len) {
+      // 轮胎：柱面明暗 + 胎面花纹 + 轮毂
       const gx = g.createLinearGradient(x, 0, x + 7, 0);
-      gx.addColorStop(0, '#08090b');
-      gx.addColorStop(0.5, '#1b1d21');
-      gx.addColorStop(1, '#0a0b0d');
+      gx.addColorStop(0, '#050607');
+      gx.addColorStop(0.35, '#26282d');
+      gx.addColorStop(0.58, '#15171b');
+      gx.addColorStop(1, '#07080a');
       g.fillStyle = gx;
-      roundRect(g, x, y, 7, len, 2.4); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.08)';
-      g.lineWidth = 0.5;
-      for (let i = 1; i < 6; i++) {
+      roundRect(g, x, y, 7, len, 2.2); g.fill();
+      g.save();
+      roundRect(g, x, y, 7, len, 2.2); g.clip();
+      g.globalAlpha = 0.55;
+      g.strokeStyle = '#000';
+      g.lineWidth = 0.45;
+      for (let i = 1; i < 9; i++) {
         g.beginPath();
-        g.moveTo(x + 0.8, y + (len / 6) * i);
-        g.lineTo(x + 6.2, y + (len / 6) * i);
+        g.moveTo(x, y + (len / 9) * i);
+        g.lineTo(x + 7, y + (len / 9) * i + 0.5);
         g.stroke();
       }
+      g.globalAlpha = 0.30;
+      g.fillStyle = '#b8c2cc';
+      g.fillRect(x + 2.6, y + len * 0.24, 1.8, len * 0.52);
+      g.restore();
     }
 
     const wl = B.wheelL;
@@ -1553,23 +1572,48 @@ const Art = (() => {
     g.fillStyle = paint;
     g.fill();
 
-    // 车漆内的细微条纹（金属感）
+    // 车漆细节：金属颗粒 + 曲面明暗 + 环境光遮蔽 + 镜面高光
     g.save();
     bodyPath(); g.clip();
+    // 金属颗粒
     g.globalAlpha = 0.05;
-    g.fillStyle = '#fff';
-    for (let i = -Wd; i < Wd; i += 2.2) {
-      g.fillRect(i, -L, 0.7, L * 2);
+    for (let i = 0; i < 1400; i++) {
+      g.fillStyle = Math.random() < 0.5 ? '#ffffff' : '#000000';
+      g.fillRect(-Wd + Math.random() * Wd * 2, -L + Math.random() * L * 2, 0.6, 0.6);
     }
     g.globalAlpha = 1;
-    // 车身暗部（前后收边）
+    // 横向曲面明暗（模拟圆柱受光）
+    const curve = g.createLinearGradient(-Wd, 0, Wd, 0);
+    curve.addColorStop(0, 'rgba(0,0,0,.42)');
+    curve.addColorStop(0.20, 'rgba(0,0,0,0)');
+    curve.addColorStop(0.5, 'rgba(255,255,255,.10)');
+    curve.addColorStop(0.80, 'rgba(0,0,0,0)');
+    curve.addColorStop(1, 'rgba(0,0,0,.48)');
+    g.fillStyle = curve;
+    g.fillRect(-Wd, -L, Wd * 2, L * 2);
+    // 前后收边（AO）
     const edge = g.createLinearGradient(0, -L, 0, L);
-    edge.addColorStop(0, 'rgba(0,0,0,.35)');
-    edge.addColorStop(0.12, 'rgba(0,0,0,0)');
-    edge.addColorStop(0.85, 'rgba(0,0,0,0)');
-    edge.addColorStop(1, 'rgba(0,0,0,.45)');
+    edge.addColorStop(0, 'rgba(0,0,0,.50)');
+    edge.addColorStop(0.10, 'rgba(0,0,0,0)');
+    edge.addColorStop(0.90, 'rgba(0,0,0,0)');
+    edge.addColorStop(1, 'rgba(0,0,0,.55)');
     g.fillStyle = edge;
     g.fillRect(-Wd, -L, Wd * 2, L * 2);
+    // 左侧镜面高光
+    g.globalAlpha = 0.55;
+    g.strokeStyle = 'rgba(255,255,255,.85)';
+    g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(-Wd + 2.4, -L * 0.55);
+    g.quadraticCurveTo(-Wd + 1.4, 0, -Wd + 2.6, L * 0.6);
+    g.stroke();
+    // 右侧轮廓光
+    g.globalAlpha = 0.30;
+    g.lineWidth = 0.9;
+    g.beginPath();
+    g.moveTo(Wd - 2.2, -L * 0.5);
+    g.quadraticCurveTo(Wd - 3.2, 0, Wd - 2.4, L * 0.55);
+    g.stroke();
     g.restore();
 
     // 车身描边
@@ -2132,10 +2176,15 @@ const Portrait = (() => {
     return cache.get(d.name);
   }
 
-  return { get, build };
+  const urlCache = new Map();
+  function dataUrl(d) {
+    if (!urlCache.has(d.name)) urlCache.set(d.name, get(d).toDataURL('image/png'));
+    return urlCache.get(d.name);
+  }
+
+  return { get, build, dataUrl };
 })();
 if (typeof window !== 'undefined') window.Portrait = Portrait;
-
 </script>
 <script>
 // track.js - 程序化赛道（Catmull-Rom 闭合样条）
@@ -3548,6 +3597,61 @@ const Meta = (() => {
     return list;
   }
 
+  // ---------- 发车界面 / 名次条 ----------
+  function renderLineup() {
+    const ul = $('lineupList');
+    ul.innerHTML = '';
+    G.cars.forEach((c, i) => {
+      const li = document.createElement('li');
+      li.className = 'lu-row' + (c.isPlayer ? ' me' : '');
+      li.innerHTML =
+        '<span class="lu-pos">' + (i + 1) + '</span>' +
+        '<img class="lu-pic" src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
+        '<span class="lu-name">' + c.driver.name + (c.isPlayer ? ' <em>' + T('you') + '</em>' : '') + '</span>' +
+        '<span class="lu-num">#' + c.driver.num + '</span>';
+      ul.appendChild(li);
+    });
+    $('lineupHint').textContent = T('gridHint');
+    $('lineup').classList.remove('hidden');
+    $('ladder').classList.add('hidden');
+  }
+
+  function hideLineup() {
+    $('lineup').classList.add('hidden');
+    $('ladder').classList.remove('hidden');
+    updateLadder(true);
+  }
+
+  function updateLadder(force) {
+    const el = $('ladder');
+    if (!el || el.classList.contains('hidden')) return;
+    const total = G.track ? G.track.length * G.laps : 1;
+    const rows = [...G.cars].sort((a, b) => {
+      if (a.finished && b.finished) return a.finishTime - b.finishTime;
+      if (a.finished) return -1;
+      if (b.finished) return 1;
+      return b.progress - a.progress;
+    });
+    const pct = (c) => Math.max(2, Math.min(100, (c.progress / total) * 100));
+    const sig = rows.map(c => c.driver.name).join(',');
+    if (!force && el.dataset.sig === sig) {
+      rows.forEach((c, i) => {
+        const bar = el.querySelector('.ld-bar[data-i="' + i + '"]');
+        if (bar) bar.style.width = pct(c) + '%';
+      });
+      return;
+    }
+    el.dataset.sig = sig;
+    el.innerHTML = rows.map((c, i) =>
+      '<div class="ld-row' + (c.isPlayer ? ' me' : '') + '">' +
+        '<span class="ld-pos">' + (i + 1) + '</span>' +
+        '<img class="ld-pic" src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
+        '<span class="ld-info"><b>' + c.driver.name + '</b>' +
+          '<span class="ld-track"><i class="ld-bar" data-i="' + i + '" style="width:' + pct(c) + '%"></i></span>' +
+        '</span>' +
+      '</div>').join('');
+  }
+
   function startRace(trackIdx, opts) {
     opts = opts || {};
     G.career = opts.career || null;
@@ -3612,10 +3716,12 @@ const Meta = (() => {
     document.getElementById('lapTotal').textContent = G.laps;
     updateWeaponHUD();
     showBanner(T('ready'));
+    renderLineup();
   }
 
   function endRace() {
     G.state = 'finished';
+    $('ladder').classList.add('hidden');
     if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); }
     const p = G.player;
     const pos = positionOf(p);
@@ -4054,7 +4160,7 @@ const Meta = (() => {
       const n = Math.ceil(G.countdown - 0.6);
       if (n <= 3 && n >= 1 && G.bannerTimer <= 0) showBanner(String(n));
       if (n !== G.lastBeep && n >= 1 && n <= 3) { G.lastBeep = n; if (SND) SND.countdownBeep(false); }
-      if (G.countdown <= 0.6 && G.bannerTimer <= 0) { showBanner(T('go')); if (SND) SND.countdownBeep(true); }
+      if (G.countdown <= 0.6 && G.bannerTimer <= 0) { showBanner(T('go')); hideLineup(); if (SND) SND.countdownBeep(true); }
       if (G.countdown <= 0) { G.state = 'racing'; }
     }
     if (G.state !== 'racing' && G.state !== 'countdown') return;
@@ -4062,6 +4168,12 @@ const Meta = (() => {
     if (G.state === 'racing') G.raceTime += dt;
 
     // 玩家输入
+    // 进入比赛后收起发车面板（兜底，防止倒计时被打断时残留）
+    if (G.state === 'racing' && G.cars.length) {
+      const lu = $('lineup');
+      if (lu && !lu.classList.contains('hidden')) hideLineup();
+    }
+
     const p = G.player;
     let steer = 0, gas = false, brake = false;
     if (G.state === 'racing') {
@@ -4125,6 +4237,9 @@ const Meta = (() => {
       // 超车台词
       if (Math.random() < dt * 0.06) showTaunt(pick(TALK));
     }
+
+    G.ladderT = (G.ladderT || 0) + dt;
+    if (G.ladderT > 0.2) { G.ladderT = 0; updateLadder(false); }
 
     if (G.tauntTimer > 0) { G.tauntTimer -= dt; if (G.tauntTimer <= 0) document.getElementById('taunt').classList.add('hidden'); }
     if (G.bannerTimer > 0) { G.bannerTimer -= dt; if (G.bannerTimer <= 0) document.getElementById('banner').classList.add('hidden'); }
@@ -4617,6 +4732,8 @@ const Meta = (() => {
 
   function toMenu() {
     G.state = 'menu';
+    $('lineup').classList.add('hidden');
+    $('ladder').classList.add('hidden');
     G.career = null;
     if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); SND.uiClick(); }
     $('result').classList.add('hidden');
@@ -4695,6 +4812,8 @@ const Meta = (() => {
       }
     })();
   }
+
+  requestAnimationFrame(frame);
 })();
 
 </script>

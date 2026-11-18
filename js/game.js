@@ -222,6 +222,61 @@
     return list;
   }
 
+  // ---------- 发车界面 / 名次条 ----------
+  function renderLineup() {
+    const ul = $('lineupList');
+    ul.innerHTML = '';
+    G.cars.forEach((c, i) => {
+      const li = document.createElement('li');
+      li.className = 'lu-row' + (c.isPlayer ? ' me' : '');
+      li.innerHTML =
+        '<span class="lu-pos">' + (i + 1) + '</span>' +
+        '<img class="lu-pic" src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
+        '<span class="lu-name">' + c.driver.name + (c.isPlayer ? ' <em>' + T('you') + '</em>' : '') + '</span>' +
+        '<span class="lu-num">#' + c.driver.num + '</span>';
+      ul.appendChild(li);
+    });
+    $('lineupHint').textContent = T('gridHint');
+    $('lineup').classList.remove('hidden');
+    $('ladder').classList.add('hidden');
+  }
+
+  function hideLineup() {
+    $('lineup').classList.add('hidden');
+    $('ladder').classList.remove('hidden');
+    updateLadder(true);
+  }
+
+  function updateLadder(force) {
+    const el = $('ladder');
+    if (!el || el.classList.contains('hidden')) return;
+    const total = G.track ? G.track.length * G.laps : 1;
+    const rows = [...G.cars].sort((a, b) => {
+      if (a.finished && b.finished) return a.finishTime - b.finishTime;
+      if (a.finished) return -1;
+      if (b.finished) return 1;
+      return b.progress - a.progress;
+    });
+    const pct = (c) => Math.max(2, Math.min(100, (c.progress / total) * 100));
+    const sig = rows.map(c => c.driver.name).join(',');
+    if (!force && el.dataset.sig === sig) {
+      rows.forEach((c, i) => {
+        const bar = el.querySelector('.ld-bar[data-i="' + i + '"]');
+        if (bar) bar.style.width = pct(c) + '%';
+      });
+      return;
+    }
+    el.dataset.sig = sig;
+    el.innerHTML = rows.map((c, i) =>
+      '<div class="ld-row' + (c.isPlayer ? ' me' : '') + '">' +
+        '<span class="ld-pos">' + (i + 1) + '</span>' +
+        '<img class="ld-pic" src="' + Portrait.dataUrl(c.driver) + '" alt="">' +
+        '<span class="ld-info"><b>' + c.driver.name + '</b>' +
+          '<span class="ld-track"><i class="ld-bar" data-i="' + i + '" style="width:' + pct(c) + '%"></i></span>' +
+        '</span>' +
+      '</div>').join('');
+  }
+
   function startRace(trackIdx, opts) {
     opts = opts || {};
     G.career = opts.career || null;
@@ -286,10 +341,12 @@
     document.getElementById('lapTotal').textContent = G.laps;
     updateWeaponHUD();
     showBanner(T('ready'));
+    renderLineup();
   }
 
   function endRace() {
     G.state = 'finished';
+    $('ladder').classList.add('hidden');
     if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); }
     const p = G.player;
     const pos = positionOf(p);
@@ -728,7 +785,7 @@
       const n = Math.ceil(G.countdown - 0.6);
       if (n <= 3 && n >= 1 && G.bannerTimer <= 0) showBanner(String(n));
       if (n !== G.lastBeep && n >= 1 && n <= 3) { G.lastBeep = n; if (SND) SND.countdownBeep(false); }
-      if (G.countdown <= 0.6 && G.bannerTimer <= 0) { showBanner(T('go')); if (SND) SND.countdownBeep(true); }
+      if (G.countdown <= 0.6 && G.bannerTimer <= 0) { showBanner(T('go')); hideLineup(); if (SND) SND.countdownBeep(true); }
       if (G.countdown <= 0) { G.state = 'racing'; }
     }
     if (G.state !== 'racing' && G.state !== 'countdown') return;
@@ -736,6 +793,12 @@
     if (G.state === 'racing') G.raceTime += dt;
 
     // 玩家输入
+    // 进入比赛后收起发车面板（兜底，防止倒计时被打断时残留）
+    if (G.state === 'racing' && G.cars.length) {
+      const lu = $('lineup');
+      if (lu && !lu.classList.contains('hidden')) hideLineup();
+    }
+
     const p = G.player;
     let steer = 0, gas = false, brake = false;
     if (G.state === 'racing') {
@@ -799,6 +862,9 @@
       // 超车台词
       if (Math.random() < dt * 0.06) showTaunt(pick(TALK));
     }
+
+    G.ladderT = (G.ladderT || 0) + dt;
+    if (G.ladderT > 0.2) { G.ladderT = 0; updateLadder(false); }
 
     if (G.tauntTimer > 0) { G.tauntTimer -= dt; if (G.tauntTimer <= 0) document.getElementById('taunt').classList.add('hidden'); }
     if (G.bannerTimer > 0) { G.bannerTimer -= dt; if (G.bannerTimer <= 0) document.getElementById('banner').classList.add('hidden'); }
@@ -1291,6 +1357,8 @@
 
   function toMenu() {
     G.state = 'menu';
+    $('lineup').classList.add('hidden');
+    $('ladder').classList.add('hidden');
     G.career = null;
     if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); SND.uiClick(); }
     $('result').classList.add('hidden');
@@ -1369,4 +1437,6 @@
       }
     })();
   }
+
+  requestAnimationFrame(frame);
 })();

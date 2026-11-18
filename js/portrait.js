@@ -186,6 +186,12 @@ const Portrait = (() => {
     return cache.get(d.name);
   }
 
-  return { get, build };
+  const urlCache = new Map();
+  function dataUrl(d) {
+    if (!urlCache.has(d.name)) urlCache.set(d.name, get(d).toDataURL('image/png'));
+    return urlCache.get(d.name);
+  }
+
+  return { get, build, dataUrl };
 })();
 if (typeof window !== 'undefined') window.Portrait = Portrait;
