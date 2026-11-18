@@ -1,0 +1,67 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#000}</style></head>
+<body><canvas id="cv" width="512" height="512"></canvas>
+<script>
+const cv = document.getElementById('cv'), g = cv.getContext('2d');
+const S = 512;
+
+// 背景：深蓝黑 + 径向光
+const bg = g.createRadialGradient(S*0.35, S*0.28, S*0.05, S*0.5, S*0.55, S*0.78);
+bg.addColorStop(0, '#16243a');
+bg.addColorStop(0.55, '#0a1220');
+bg.addColorStop(1, '#05070c');
+g.fillStyle = bg; g.fillRect(0, 0, S, S);
+
+// 底部暖色地面带（暗示赛道）
+const gr = g.createLinearGradient(0, S*0.72, 0, S);
+gr.addColorStop(0, 'rgba(255,120,40,0)');
+gr.addColorStop(1, 'rgba(255,110,40,.22)');
+g.fillStyle = gr; g.fillRect(0, S*0.7, S, S*0.3);
+
+// 速度斜条
+g.save();
+g.translate(S*0.5, S*0.5); g.rotate(-0.32);
+for (let i = 0; i < 3; i++) {
+  const y = -S*0.10 + i * S*0.145;
+  const w = S*0.62 - i * S*0.06;
+  const grad = g.createLinearGradient(-w/2, 0, w/2, 0);
+  grad.addColorStop(0, 'rgba(0,220,255,0)');
+  grad.addColorStop(0.35, 'rgba(0,220,255,.55)');
+  grad.addColorStop(0.75, 'rgba(120,240,255,.85)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(-w/2, y, w, S*0.052);
+}
+g.restore();
+
+// 大写 K（白 + 青色辉光）
+g.save();
+g.shadowColor = '#38e0ff';
+g.shadowBlur = S*0.10;
+g.fillStyle = '#ffffff';
+g.font = 'bold ' + Math.round(S*0.62) + 'px "Segoe UI", Arial, sans-serif';
+g.textAlign = 'center';
+g.textBaseline = 'middle';
+g.fillText('K', S*0.5, S*0.52);
+g.restore();
+
+// 右下角方格旗（拉力元素，替代任何"K+斜杠"的既有标识）
+g.save();
+g.translate(S*0.70, S*0.76);
+g.rotate(-0.32);
+const cell = S*0.052;
+for (let r = 0; r < 2; r++) {
+  for (let c = 0; c < 4; c++) {
+    g.fillStyle = (r + c) % 2 ? 'rgba(255,255,255,.92)' : 'rgba(18,24,34,.92)';
+    g.fillRect(-cell*4 + c*cell, r*cell, cell, cell);
+  }
+}
+g.restore();
+
+// 四角暗角
+const vg = g.createRadialGradient(S*0.5, S*0.5, S*0.30, S*0.5, S*0.5, S*0.72);
+vg.addColorStop(0, 'rgba(0,0,0,0)');
+vg.addColorStop(1, 'rgba(0,0,0,.55)');
+g.fillStyle = vg; g.fillRect(0, 0, S, S);
+
+document.title = 'OK';
+</script></body></html>
