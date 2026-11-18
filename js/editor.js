@@ -6,6 +6,8 @@ const Editor = (() => {
     width: 160,
     theme: 0,
     name: '自定义赛道',
+    closed: true,
+    checkpoints: 0,
     drag: -1,
     view: { s: 1, ox: 0, oy: 0 },
   };
@@ -58,7 +60,7 @@ const Editor = (() => {
     fitView();
     if (state.points.length >= 3 && typeof Track !== 'undefined') {
       // 用实际赛道样条预览，保证所见即所得
-      const t = new Track(state.points, state.width, 'preview');
+      const t = new Track(state.points, state.width, 'preview', { closed: state.closed, checkpoints: state.checkpoints });
       const pts = [];
       for (let s = 0; s < t.length; s += 6) {
         const p = t.at(s);
@@ -66,7 +68,7 @@ const Editor = (() => {
       }
       g.beginPath();
       pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
-      g.closePath();
+      if (state.closed) g.closePath();
       g.strokeStyle = 'rgba(0,0,0,.55)';
       g.lineWidth = state.width * state.view.s + 10;
       g.lineJoin = 'round'; g.lineCap = 'round';
@@ -79,6 +81,28 @@ const Editor = (() => {
       g.setLineDash([8, 10]);
       g.stroke();
       g.setLineDash([]);
+
+      // 检查点标记
+      if (t.checkpoints && t.checkpoints.length) {
+        t.checkpoints.forEach((cpS, i) => {
+          const cp = t.at(cpS);
+          const sc = worldToScreen(cp.x, cp.y);
+          const half = (state.width * state.view.s) / 2 + 6;
+          g.save();
+          g.translate(sc.x, sc.y);
+          g.rotate(Math.atan2(cp.ty, cp.tx) + Math.PI / 2);
+          g.strokeStyle = 'rgba(255,212,121,.85)';
+          g.lineWidth = 2;
+          g.setLineDash([5, 5]);
+          g.beginPath(); g.moveTo(-half, 0); g.lineTo(half, 0); g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = '#ffd479';
+          g.font = 'bold 9px sans-serif';
+          g.textAlign = 'center';
+          g.fillText('CP' + (i + 1), 0, -3);
+          g.restore();
+        });
+      }
     } else if (state.points.length >= 2) {
       const pts = state.points.map(p => worldToScreen(p.x, p.y));
       const closed = false;
@@ -180,6 +204,8 @@ const Editor = (() => {
       li.onclick = () => {
         state.points = t.points.map(p => ({ x: p.x, y: p.y }));
         state.width = t.width; state.theme = t.theme; state.name = t.name;
+        state.closed = t.closed !== false;
+        state.checkpoints = t.checkpoints || 0;
         syncControls();
         draw();
       };
@@ -202,6 +228,10 @@ const Editor = (() => {
     if (n) n.value = state.name;
     if (w) { w.value = state.width; document.getElementById('edWidthVal').textContent = state.width; }
     if (th) th.value = String(state.theme);
+    const cl = document.getElementById('edClosed');
+    const cp = document.getElementById('edCheckpoints');
+    if (cl) cl.checked = state.closed;
+    if (cp) { cp.value = state.checkpoints; document.getElementById('edCpVal').textContent = state.checkpoints; }
   }
 
   function save() {
@@ -209,7 +239,11 @@ const Editor = (() => {
     const list = loadAll();
     const name = (document.getElementById('edName').value || '自定义赛道').trim();
     state.name = name;
-    list.push({ name: name, theme: state.theme, width: state.width, points: state.points.map(p => ({ x: p.x, y: p.y })) });
+    list.push({
+      name: name, theme: state.theme, width: state.width,
+      points: state.points.map(p => ({ x: p.x, y: p.y })),
+      closed: state.closed, checkpoints: state.checkpoints,
+    });
     saveAll(list);
     refreshList();
     toast('已保存：' + name);
@@ -238,14 +272,33 @@ const Editor = (() => {
       th.dataset.bound = '1';
       th.onchange = () => { state.theme = parseInt(th.value, 10); draw(); };
     }
+    const cl = document.getElementById('edClosed');
+    if (cl && !cl.dataset.bound) {
+      cl.dataset.bound = '1';
+      cl.onchange = () => { state.closed = cl.checked; draw(); };
+    }
+    const cp = document.getElementById('edCheckpoints');
+    if (cp && !cp.dataset.bound) {
+      cp.dataset.bound = '1';
+      cp.oninput = () => {
+        state.checkpoints = parseInt(cp.value, 10);
+        document.getElementById('edCpVal').textContent = state.checkpoints;
+        draw();
+      };
+    }
     const n = document.getElementById('edName');
     if (n && !n.dataset.bound) {
       n.dataset.bound = '1';
       n.oninput = () => { state.name = n.value; };
     }
     if (location.search.includes('edemo') && !state.points.length) {
-      const demo = [[400,200],[900,160],[1300,320],[1450,700],[1150,980],[800,860],[520,1000],[260,700]];
+      const demo = location.search.includes('edopen')
+        ? [[300,700],[700,300],[1100,650],[1500,320],[1800,700]]
+        : [[400,200],[900,160],[1300,320],[1450,700],[1150,980],[800,860],[520,1000],[260,700]];
       state.points = demo.map(p => ({ x: p[0], y: p[1] }));
+      if (location.search.includes('edopen')) state.closed = false;
+      const cpm = /edcp=(\d+)/.exec(location.search);
+      if (cpm) state.checkpoints = parseInt(cpm[1], 10);
     }
     refreshList();
     syncControls();
@@ -255,7 +308,10 @@ const Editor = (() => {
   function play() {
     if (state.points.length < 3) { toast('至少需要 3 个控制点'); return; }
     state.name = (document.getElementById('edName').value || '自定义赛道').trim();
-    Game.startCustomTrack({ name: state.name, theme: state.theme, width: state.width, points: state.points });
+    Game.startCustomTrack({
+      name: state.name, theme: state.theme, width: state.width, points: state.points,
+      closed: state.closed, checkpoints: state.checkpoints,
+    });
   }
 
   function clear() {

@@ -94,11 +94,30 @@ ok(Meta.tierOf(9999).key === 'diamond', 'tier 9999 = diamond');
 
 // 幽灵记录（隔离 key）
 if (typeof Ghost !== 'undefined') {
-  Ghost.save('__test_track', 12.34, [[1,2,0.5],[3,4,0.6],[5,6,0.7]]);
+  Ghost.save('__test_track', [{ t: 12.34, pts: [[1,2,0.5,0],[3,4,0.6,50],[5,6,0.7,100]] }]);
   const gg = Ghost.load('__test_track');
-  ok(gg && Math.abs(gg.lap - 12.34) < 1e-6, 'ghost lap saved');
-  ok(gg.pts.length === 3, 'ghost points saved');
+  ok(gg && Math.abs(gg.best.t - 12.34) < 1e-6, 'ghost lap saved');
+  ok(gg.best.pts.length === 3, 'ghost points saved');
   Ghost.clear('__test_track');  ok(Ghost.load('__test_track') === null, 'ghost cleared');
+
+  // 多圈：最佳 / 平均
+  const mkLap = (t) => ({ t: t, pts: [[1,2,0.5,0],[3,4,0.6,50],[5,6,0.7,100]] });
+  Ghost.save('__multi', [mkLap(13.0), mkLap(12.0), mkLap(11.0)]);
+  const mg = Ghost.load('__multi');
+  ok(mg.best.t === 11.0, 'best lap = 11.0, got ' + mg.best.t);
+  ok(Math.abs(mg.avg - 12.0) < 1e-9, 'avg = 12.0, got ' + mg.avg);
+  ok(mg.laps.length === 3, 'three laps stored');
+
+  Ghost.push('__multi', mkLap(10.5));
+  ok(Ghost.load('__multi').best.t === 10.5, 'push updates best');
+  ok(Ghost.load('__multi').laps.length === 4, 'push keeps laps');
+
+  for (let i = 0; i < 6; i++) Ghost.push('__multi', mkLap(20 + i));
+  ok(Ghost.load('__multi').laps.length <= Ghost.MAX_LAPS, 'laps capped at MAX_LAPS');
+
+  const ts = Ghost.timeAtS(Ghost.load('__multi').best, 50);
+  ok(ts > 0 && ts < 5, 'timeAtS in range, got ' + ts.toFixed(2));
+  Ghost.clear('__multi');
 }
 
 document.getElementById('out').textContent =

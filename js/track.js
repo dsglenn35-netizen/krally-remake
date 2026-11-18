@@ -1,9 +1,14 @@
-// track.js - 程序化赛道（Catmull-Rom 闭合样条）
+// track.js - 程序化赛道（Catmull-Rom 样条，支持闭合/开放 + 检查点）
 class Track {
-  constructor(controlPoints, width, name) {
+  constructor(controlPoints, width, name, opts) {
+    opts = opts || {};
     this.name = name || 'NEON HARBOR';
     this.width = width;
     this.control = controlPoints;
+    this.closed = opts.closed !== false;      // 默认闭合
+    this.open = !this.closed;
+    this.checkpointCount = opts.checkpoints || 0;
+    this.checkpoints = [];
     this.points = [];
     this.build();
   }
@@ -19,31 +24,65 @@ class Track {
   build() {
     const cp = this.control, n = cp.length, STEP = 14;
     const raw = [];
-    for (let i = 0; i < n; i++) {
-      const p0 = cp[(i - 1 + n) % n], p1 = cp[i], p2 = cp[(i + 1) % n], p3 = cp[(i + 2) % n];
-      for (let j = 0; j < STEP; j++) raw.push(Track.catmull(p0, p1, p2, p3, j / STEP));
+    if (this.closed) {
+      for (let i = 0; i < n; i++) {
+        const p0 = cp[(i - 1 + n) % n], p1 = cp[i], p2 = cp[(i + 1) % n], p3 = cp[(i + 2) % n];
+        for (let j = 0; j < STEP; j++) raw.push(Track.catmull(p0, p1, p2, p3, j / STEP));
+      }
+    } else {
+      // 开放赛道：端点用镜像点补切线，保证曲线起止于首末控制点
+      for (let i = 0; i < n - 1; i++) {
+        const p0 = i > 0 ? cp[i - 1] : { x: 2 * cp[0].x - cp[1].x, y: 2 * cp[0].y - cp[1].y };
+        const p1 = cp[i];
+        const p2 = cp[i + 1];
+        const p3 = i + 2 < n ? cp[i + 2] : { x: 2 * cp[n - 1].x - cp[n - 2].x, y: 2 * cp[n - 1].y - cp[n - 2].y };
+        for (let j = 0; j < STEP; j++) raw.push(Track.catmull(p0, p1, p2, p3, j / STEP));
+      }
+      raw.push({ x: cp[n - 1].x, y: cp[n - 1].y });
     }
-    // 切线 / 法线 / 弧长
+
     let s = 0;
-    for (let i = 0; i < raw.length; i++) {
-      const a = raw[(i - 1 + raw.length) % raw.length], b = raw[(i + 1) % raw.length];
+    const len = raw.length;
+    for (let i = 0; i < len; i++) {
+      let a, b;
+      if (this.closed) {
+        a = raw[(i - 1 + len) % len]; b = raw[(i + 1) % len];
+      } else {
+        a = raw[Math.max(0, i - 1)]; b = raw[Math.min(len - 1, i + 1)];
+      }
       const tx = b.x - a.x, ty = b.y - a.y;
-      const len = Math.hypot(tx, ty) || 1;
+      const l = Math.hypot(tx, ty) || 1;
       const p = raw[i];
       if (i > 0) s += Math.hypot(p.x - raw[i - 1].x, p.y - raw[i - 1].y);
       this.points.push({
         x: p.x, y: p.y,
-        tx: tx / len, ty: ty / len,
-        nx: -ty / len, ny: tx / len,
+        tx: tx / l, ty: ty / l,
+        nx: -ty / l, ny: tx / l,
         s,
       });
     }
-    this.length = s + Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y);
+    if (this.closed) {
+      this.length = s + Math.hypot(raw[0].x - raw[len - 1].x, raw[0].y - raw[len - 1].y);
+    } else {
+      this.length = s;
+    }
+
+    // 检查点（等距，不含起点）
+    this.checkpoints = [];
+    if (this.checkpointCount > 0) {
+      for (let i = 1; i <= this.checkpointCount; i++) {
+        this.checkpoints.push(this.length * i / (this.checkpointCount + 1));
+      }
+    }
   }
 
   at(s) {
     const L = this.length;
-    s = ((s % L) + L) % L;
+    if (this.open) {
+      s = Math.max(0, Math.min(L, s));
+    } else {
+      s = ((s % L) + L) % L;
+    }
     const pts = this.points;
     let lo = 0, hi = pts.length - 1;
     while (lo < hi) {
@@ -53,18 +92,17 @@ class Track {
     return pts[lo];
   }
 
-  // 找最近的路面点（分段粗查 + 局部细查）
   nearest(x, y) {
     const pts = this.points;
-    let best = null, bestD = Infinity;
+    let best = 0, bestD = Infinity;
     for (let i = 0; i < pts.length; i += 4) {
       const p = pts[i];
       const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
       if (d < bestD) { bestD = d; best = i; }
     }
-    const from = (best - 6 + pts.length) % pts.length;
+    const from = this.closed ? (best - 6 + pts.length) % pts.length : Math.max(0, best - 6);
     for (let k = 0; k < 13; k++) {
-      const i = (from + k) % pts.length;
+      const i = this.closed ? (from + k) % pts.length : Math.min(pts.length - 1, from + k);
       const p = pts[i];
       const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
       if (d < bestD) { bestD = d; best = i; }

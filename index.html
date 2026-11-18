@@ -82,6 +82,10 @@
               <option value="7">秋日林道</option>
             </select>
           </label>
+          <label class="ed-row"><span>类型</span>
+            <label class="ed-check"><input id="edClosed" type="checkbox" checked> 闭合赛道</label>
+          </label>
+          <label class="ed-row"><span>检查点</span><input id="edCheckpoints" type="range" min="0" max="6" value="0"><b id="edCpVal">0</b></label>
           <div class="edbtns">
             <button id="edUndo" class="ghost">撤销</button>
             <button id="edClear" class="ghost">清空</button>
@@ -171,6 +175,7 @@
       <div class="time" id="raceTime">0:00.00</div>
       <div class="best" id="bestLap">BEST --:--.--</div>
       <div class="best" id="ghostLap" style="color:#8fd8ff"></div>
+      <div class="best" id="ghostDelta"></div>
       <div class="best" id="fps" style="color:#4b6579">-- FPS</div>
     </div>
     <div class="hud-right">

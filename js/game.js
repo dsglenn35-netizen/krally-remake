@@ -91,7 +91,7 @@
       const p = track.startPose();
       const off = (slot - 1.5) * 46;
       const s0 = 80 + slot * 42;
-      const st = track.at(track.length + s0);
+      const st = track.open ? track.at(20 + slot * 46) : track.at(track.length + s0);
       this.x = st.x + st.nx * off;
       this.y = st.y + st.ny * off;
       this.angle = Math.atan2(st.ty, st.tx);
@@ -171,12 +171,31 @@
       if (G.recT >= 0.05) {
         G.recT = 0;
         G.rec = G.rec || [];
-        G.rec.push({ t: G.raceTime, x: this.x, y: this.y, a: this.angle });
+        G.rec.push({ t: G.raceTime, x: this.x, y: this.y, a: this.angle, s: this.s });
         if (G.rec.length > 8000) G.rec.shift();
       }
     }
 
-    if (lapNow !== this.lap) {
+    // 检查点：按顺序记录
+    if (track.checkpoints && track.checkpoints.length) {
+      this.cpIdx = this.cpIdx || 0;
+      while (this.cpIdx < track.checkpoints.length && this.s >= track.checkpoints[this.cpIdx] - 25) {
+        this.cpIdx++;
+        if (this.isPlayer) showBanner((T('checkpoint') || 'CHECKPOINT') + ' ' + this.cpIdx + '/' + track.checkpoints.length);
+      }
+    }
+
+    // 开放赛道：单程计时，冲过终点线即完赛
+    if (track.open) {
+      this.dist = this.s;
+      this.lap = 1;
+      const allCp = !track.checkpoints || track.checkpoints.length === 0 || (this.cpIdx || 0) >= track.checkpoints.length;
+      if (!this.finished && this.s >= track.length - 20 && allCp) {
+        this.finished = true;
+        this.finishTime = G.raceTime;
+        if (this.isPlayer) endRace();
+      }
+    } else if (lapNow !== this.lap) {
         this.lap = lapNow;
         if (this.lap > 1) {
           const lapTime = G.raceTime - this.lapStart;
@@ -185,13 +204,11 @@
           if (this.isPlayer && typeof Ghost !== 'undefined' && G.track) {
             const from = G.raceTime - lapTime;
             const pts = (G.rec || []).filter(s => s.t >= from)
-              .map(s => [Math.round(s.x), Math.round(s.y), Math.round(s.a * 100) / 100]);
+              .map(s => [Math.round(s.x), Math.round(s.y), Math.round(s.a * 100) / 100, Math.round(s.s || 0)]);
             if (pts.length > 20) {
-              Ghost.save(G.track.name, lapTime, pts);
-              G.ghost = { lap: lapTime, pts: pts, rate: 0.05 };
+              G.ghost = Ghost.push(G.track.name, { t: lapTime, pts: pts });
               G.ghostNew = true;
-              const gl2 = document.getElementById('ghostLap');
-              if (gl2) gl2.textContent = '幽灵 ' + fmtTime(lapTime) + ' ★';
+              updateGhostHud();
             }
           }
         }
@@ -235,7 +252,10 @@
 
   function buildTrack(idx) {
     const def = TRACKS[idx];
-    return new Track(def.points, def.width, def.name);
+    return new Track(def.points, def.width, def.name, {
+      closed: def.closed !== false,
+      checkpoints: def.checkpoints || 0,
+    });
   }
 
   // ---------- 自定义赛道 ----------
@@ -244,14 +264,20 @@
     const list = Editor.loadAll();
     list.forEach(t => {
       const existing = TRACKS.findIndex(x => x.name === t.name && x.custom);
-      const def = { name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true };
+      const def = {
+        name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true,
+        closed: t.closed !== false, checkpoints: t.checkpoints || 0,
+      };
       if (existing >= 0) TRACKS[existing] = def; else TRACKS.push(def);
     });
   }
 
   function registerCustom(def) {
     const idx = TRACKS.findIndex(x => x.custom && x.name === def.name);
-    const full = { name: def.name, theme: def.theme, width: def.width, points: def.points, custom: true };
+    const full = {
+      name: def.name, theme: def.theme, width: def.width, points: def.points, custom: true,
+      closed: def.closed !== false, checkpoints: def.checkpoints || 0,
+    };
     if (idx >= 0) { TRACKS[idx] = full; return idx; }
     TRACKS.push(full);
     return TRACKS.length - 1;
@@ -261,10 +287,19 @@
     startCustomTrack(def) {
       const idx = registerCustom(def);
       G.selectedTrack = idx;
-      startRace(idx, {});
       G.driverReturn = null;
-      if (typeof showView === 'function') showView('home');
-      document.getElementById('menu').classList.add('hidden');
+      // 延后一帧，等启动流程（renderHome/showView）跑完再开赛
+      setTimeout(() => {
+        startRace(idx, {});
+        const wm = /warmup=(\d+)/.exec(location.search);
+        if (wm) {
+          G.countdown = 0.05; G.state = 'racing';
+          document.getElementById('banner').classList.add('hidden');
+          const n = parseInt(wm[1], 10);
+          for (let i = 0; i < n; i++) update(1 / 60);
+          if (G.state === 'racing') hideLineup();
+        }
+      }, 0);
     },
     reloadTracks() { registerAllCustom(); },
     openEditor() { showView('editor'); if (typeof Editor !== 'undefined') Editor.open(); },
@@ -279,6 +314,15 @@
       list.push({ x: p.x + p.nx * rand(-40, 40), y: p.y + p.ny * rand(-40, 40), type: types[i], respawn: 0, alive: true });
     }
     return list;
+  }
+
+  function updateGhostHud() {
+    const gl = document.getElementById('ghostLap');
+    if (!gl) return;
+    if (!G.ghost || !G.ghost.best) { gl.textContent = ''; return; }
+    gl.textContent = '幽灵 ' + fmtTime(G.ghost.best.t) +
+      (G.ghost.laps.length > 1 ? ' · 平均 ' + fmtTime(G.ghost.avg) : '') +
+      (G.ghostNew ? ' ★' : '');
   }
 
   // ---------- 发车界面 / 名次条 ----------
@@ -344,7 +388,8 @@
     G.career = opts.career || null;
     G.collisions = 0;
     G.tactics = { block: 0, ram: 0, loot: 0 };
-    G.laps = opts.laps || LAPS;
+    const defLaps = (TRACKS[trackIdx == null ? G.selectedTrack : trackIdx] || {});
+    G.laps = defLaps.closed === false ? 1 : (opts.laps || LAPS);
     G.posHist = [];
     G.posT = 0;
     G.rec = [];
@@ -353,8 +398,7 @@
     const track = buildTrack(trackIdx == null ? G.selectedTrack : trackIdx);
     G.track = track;
     G.ghost = (typeof Ghost !== 'undefined') ? Ghost.load(track.name) : null;
-    const gl = document.getElementById('ghostLap');
-    if (gl) gl.textContent = G.ghost ? ('幽灵 ' + fmtTime(G.ghost.lap)) : '';
+    updateGhostHud();
     if (location.search.includes('fakeghost')) {
       const pts = [];
       const step = 8;
@@ -507,6 +551,7 @@
     if (SND) { SND.engineStop(); SND.skidStop(); SND.musicStop(); }
     const p = G.player;
     const pos = positionOf(p);
+    if (G.track && G.track.open && !p.bestLap) p.bestLap = p.finishTime;
     if (p.bestLap && G.track) Meta.recordBestLap(G.track.name, p.bestLap);
 
     let rewards = null, champDone = false;
@@ -1047,6 +1092,25 @@
       }
     }
 
+    // 幽灵实时差值（对比最佳圈）
+    G.ghostT = (G.ghostT || 0) + dt;
+    if (G.ghostT > 0.1) {
+      G.ghostT = 0;
+      const gd = document.getElementById('ghostDelta');
+      if (gd) {
+        if (G.ghost && G.ghost.best && G.player && G.state === 'racing' && typeof Ghost !== 'undefined') {
+          const p = G.player;
+          const lapElapsed = G.raceTime - (p.lapStart || 0);
+          const gt = Ghost.timeAtS(G.ghost.best, p.s);
+          const d = lapElapsed - gt;
+          gd.textContent = (d >= 0 ? '+' : '') + d.toFixed(2) + 's';
+          gd.style.color = d <= 0 ? '#7ef0c0' : '#ff8fa0';
+        } else {
+          gd.textContent = '';
+        }
+      }
+    }
+
     G.ladderT = (G.ladderT || 0) + dt;
     if (G.ladderT > 0.2) { G.ladderT = 0; updateLadder(false); }
 
@@ -1092,10 +1156,10 @@
     }
 
     // 幽灵车（最佳圈回放）
-    if (G.ghost && G.player && (G.state === 'racing' || G.state === 'countdown')) {
+    if (G.ghost && G.ghost.best && G.player && (G.state === 'racing' || G.state === 'countdown')) {
       const elapsed = Math.max(0, G.raceTime - (G.player.lapStart || 0));
       const gi = Math.floor(elapsed / (G.ghost.rate || 0.05));
-      const gp = G.ghost.pts[gi];
+      const gp = G.ghost.best.pts[gi];
       if (gp) {
         ctx.save();
         ctx.globalAlpha = 0.42;
@@ -1621,7 +1685,10 @@
   G.selectedDriver = Math.min(DRIVERS.length - 1, Math.max(0, Meta.driverIdx || 0));
   if (typeof Editor !== 'undefined') {
     Editor.loadAll().forEach(t => {
-      TRACKS.push({ name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true });
+      TRACKS.push({
+        name: t.name, theme: t.theme, width: t.width, points: t.points, custom: true,
+        closed: t.closed !== false, checkpoints: t.checkpoints || 0,
+      });
     });
   }
 
@@ -1687,4 +1754,11 @@
   }
 
   requestAnimationFrame(frame);
+
+  if (location.search.includes('dbgstate')) {
+    setTimeout(() => {
+      document.title = 'STATE ' + G.state + ' rt=' + (G.raceTime || 0).toFixed(2) +
+        ' cd=' + (G.countdown || 0).toFixed(2) + ' cars=' + (G.cars || []).length;
+    }, 4000);
+  }
 })();

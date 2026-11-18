@@ -478,6 +478,30 @@ const Terrain = (() => {
     }
     g.restore();
 
+    // ---------------- 检查点门 ----------------
+    if (track.checkpoints && track.checkpoints.length) {
+      track.checkpoints.forEach((cpS, i) => {
+        const p = track.at(cpS);
+        g.save();
+        g.translate(p.x, p.y);
+        g.rotate(Math.atan2(p.ty, p.tx));
+        // 横跨路面的旗线
+        g.strokeStyle = 'rgba(255,212,121,.75)';
+        g.lineWidth = 3;
+        g.setLineDash([12, 8]);
+        g.beginPath(); g.moveTo(0, -W / 2); g.lineTo(0, W / 2); g.stroke();
+        g.setLineDash([]);
+        // 两侧立柱
+        g.fillStyle = '#20242a';
+        g.fillRect(-3, -W / 2 - 7, 6, 14);
+        g.fillRect(-3, W / 2 - 7, 6, 14);
+        g.fillStyle = '#ffd479';
+        g.fillRect(-4, -W / 2 - 9, 8, 4);
+        g.fillRect(-4, W / 2 + 5, 8, 4);
+        g.restore();
+      });
+    }
+
     // ---------------- 场景物 ----------------
     const roadDist = (x, y) => Math.abs(track.nearest(x, y).lateral);
 

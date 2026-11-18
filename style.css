@@ -281,3 +281,5 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .ed-item span { color:#6b90a8; font-size:9.5px; }
 .ed-del { background:transparent; border:1px solid rgba(255,120,140,.4); color:#ff8fa0; font-size:9px;
   padding:1px 6px; border-radius:4px; cursor:pointer; box-shadow:none; }
+.ed-check { display:flex; align-items:center; gap:6px; font-size:11px; color:#cfe4f5; }
+.ed-check input { width:auto; }
