@@ -573,6 +573,7 @@
           onStage: (st) => {
             const el = document.querySelector('#loading span');
             if (el) el.textContent = '生成赛道… ' + (STAGE_ZH[st] || st);
+            try { console.log('BAKE ' + st); } catch (e) {}
           },
         });
         G.mapScale = mapScale;
@@ -1238,9 +1239,12 @@
 
     // 相机软钳制：只保证镜头不飞出地图太多，绝不把玩家挤出画面
     if (G.map) {
-      const inset = 40;   // 只允许镜头略微出界，避免露出大面积纯色边缘
-      G.camX = Math.max(G.map.x + inset, Math.min(G.map.x + G.map.w - inset, G.camX));
-      G.camY = Math.max(G.map.y + inset, Math.min(G.map.y + G.map.h - inset, G.camY));
+      // 只在玩家位于地图内部时钳制镜头；玩家跑出地图时镜头继续跟随，避免看不见车
+      const inset = 40, m = G.map;
+      const inX = p.x > m.x + inset && p.x < m.x + m.w - inset;
+      const inY = p.y > m.y + inset && p.y < m.y + m.h - inset;
+      if (inX) G.camX = Math.max(m.x + inset, Math.min(m.x + m.w - inset, G.camX));
+      if (inY) G.camY = Math.max(m.y + inset, Math.min(m.y + m.h - inset, G.camY));
     }
 
     // 粒子

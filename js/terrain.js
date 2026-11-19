@@ -134,7 +134,9 @@ const Terrain = (() => {
 
     const cv = document.createElement('canvas');
     cv.width = Math.round(w * S); cv.height = Math.round(h * S);
-    const g = cv.getContext('2d', { alpha: false });
+    // willReadFrequently 强制这张大画布留在 CPU 内存：
+    // 硬件加速下否则会被放进 GPU 共享图像，切瓦片时触发 shared_image 回读死锁
+    const g = cv.getContext('2d', { alpha: false, willReadFrequently: true });
     g.scale(S, S);
     g.translate(-x0, -y0);
 

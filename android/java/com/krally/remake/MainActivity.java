@@ -55,10 +55,10 @@ public class MainActivity extends Activity {
         });
         web.setBackgroundColor(0xFF08090F);
         // 设备 GPU 在绘制大尺寸 canvas 时会 SIGSEGV（Chrome_InProcGp），改用软件渲染保证稳定
-        // 默认软件渲染（历史原因：硬件加速曾在大贴图下崩溃）；
-        // 启动加 --es hw 1 可临时切硬件加速做 A/B 测试
-        boolean useHW = getIntent() != null && "1".equals(getIntent().getStringExtra("hw"));
-        web.setLayerType(useHW ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_SOFTWARE, null);
+        // 默认硬件加速（90Hz 屏可跑到 90 FPS）。
+        // 需要回退时：--es hw 0 强制软件渲染
+        boolean forceSW = getIntent() != null && "0".equals(getIntent().getStringExtra("hw"));
+        web.setLayerType(forceSW ? View.LAYER_TYPE_SOFTWARE : View.LAYER_TYPE_HARDWARE, null);
         String qa = getIntent() != null ? getIntent().getStringExtra("url") : null;
         web.loadUrl(qa != null && qa.length() > 0 ? qa : "file:///android_asset/index.html");
         setContentView(web);
