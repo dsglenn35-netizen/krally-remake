@@ -198,3 +198,92 @@
       <div id="fps" class="fps-badge">-- FPS</div>
     </div>
     <div class="weapon" id="weaponBox"><span id="weaponName">--</span><small id="weaponAmmo"></small></div>
+    <div class="healthbar"><i id="healthFill"></i></div>
+    <div id="taunt" class="taunt hidden"></div>
+    <div id="banner" class="banner hidden"></div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <h1 data-i18n="pausedTitle">暂停</h1>
+    <div class="pause-actions">
+      <button id="resumeBtn" data-i18n="resume">继续</button>
+      <button id="quitBtn" class="danger" data-i18n="abort">终止比赛</button>
+      <button id="exitBtn" class="danger" data-i18n="exitApp">退出游戏</button>
+      <button id="assistBtn" class="assist">手感：标准</button>
+    </div>
+  </div>
+
+  <div id="credits" class="overlay hidden">
+    <div class="credits-card">
+      <h1>关于本作</h1>
+      <p class="cr-line"><b>原作</b>　《烈火战车 / K-Rally》— Infinite Dreams，2006，Symbian S60（SISX）</p>
+      <p class="cr-line"><b>性质</b>　个人情怀向重制（fan remake），非官方、不商用</p>
+      <p class="cr-line"><b>素材</b>　仅复用原作文本（台词 / 车手名 / 赞助商名）</p>
+      <p class="cr-line">美术、音频、物理、赛道全部程序化重写，未使用原作图像或音频</p>
+      <p class="cr-line"><b>技术</b>　HTML5 Canvas 2D + WebAudio，Android WebView 封装</p>
+      <p class="cr-dim">“当年在诺基亚上跑的那台车，现在还在跑。”</p>
+      <button id="creditsBack" class="ghost">返回</button>
+    </div>
+  </div>
+
+  <div id="confirm" class="overlay hidden">
+    <div class="confirm-card">
+      <h1 data-i18n="confirmTitle">确认</h1>
+      <p id="confirmMsg"></p>
+      <div class="pause-actions">
+        <button id="confirmYes" class="danger" data-i18n="exitApp">退出游戏</button>
+        <button id="confirmNo" data-i18n="cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="result-card">
+      <h1 id="resultTitle">FINISH</h1>
+      <canvas id="posChart" width="560" height="132"></canvas>
+      <div class="stats" id="resultStats"></div>
+      <div class="rewards" id="resultRewards"></div>
+      <div class="btnrow">
+        <button id="againBtn">继续</button>
+        <button class="ghost" id="menuBtn" data-i18n="menu">主菜单</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="touch" class="touch hidden">
+    <div class="pad">
+      <button id="tLeft">&#9664;</button>
+      <button id="tRight">&#9654;</button>
+    </div>
+    <div class="pad">
+      <button id="tBrake" data-i18n="btnBrake">刹车</button>
+      <button id="tGas" data-i18n="btnGas">油门</button>
+      <button id="tFire" data-i18n="btnFire">开火</button>
+    </div>
+  </div>
+
+<script>
+window.addEventListener('error', function (e) {
+  var d = document.getElementById('errbox');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'errbox';
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#500;color:#fff;font:13px monospace;padding:8px;z-index:9999;white-space:pre-wrap';
+    document.body.appendChild(d);
+  }
+  d.textContent += (e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || 0) + '\n';
+}, true);
+</script>
+<script src="js/i18n.js"></script>
+<script src="content/strings.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/drivers.js"></script>
+<script src="js/portrait.js"></script>
+<script src="js/ghost.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/track.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

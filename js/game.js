@@ -1582,9 +1582,14 @@
     if (el) el.classList.toggle('hidden', !on);
   }
 
-  function drawMenuBg() {
+  function drawMenuBg(retry) {
     const cv = document.getElementById('menuBg');
-    if (!cv || !cv.clientWidth) return;
+    if (!cv) return;
+    if (!cv.clientWidth || !cv.clientHeight) {
+      // 布局还没完成（冷启动常见），下一帧再画
+      if (!retry || retry < 3) requestAnimationFrame(() => setTimeout(() => drawMenuBg((retry || 0) + 1), 30));
+      return;
+    }
     const w = cv.clientWidth | 0, h = cv.clientHeight | 0;
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     const g = cv.getContext('2d');
@@ -2148,6 +2153,10 @@
 
   // ---------- 启动 ----------
   resizeCanvas();
+  try {
+    console.log('BOOT save cash=' + (Meta.data && Meta.data.cash) + ' races=' + (Meta.data && Meta.data.races) +
+      ' driver=' + Meta.driverIdx + ' cars=' + ((Meta.data && Meta.data.cars) || []).length);
+  } catch (e) {}
 
   if (typeof I18N !== 'undefined') {
     const lm = /lang=(zh|en)/.exec(location.search);
