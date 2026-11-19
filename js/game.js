@@ -210,6 +210,15 @@
       const steerRate = 2.9 * (0.72 + 0.28 * grip) * AS.steer;
       this.angle += steerInput * steerRate * dt * speedFactor * this.handling * (offroad ? 0.7 : 1);
 
+      // 自动回正（仅轻松档、仅玩家）：松开方向时车头缓慢对齐前方赛道
+      if (AS.center > 0 && this.isPlayer && Math.abs(steerInput) < 0.05 && this.speed > 60) {
+        const look = track.at(this.s + 70 + this.speed * 0.22);
+        const want = Math.atan2(look.ty, look.tx);
+        const diff = wrapAngle(want - this.angle);
+        const k = AS.center * Math.min(1, this.speed / 180);
+        this.angle += diff * Math.min(1, k * dt);
+      }
+
       // 加速 / 刹车
       let accel = 0;
       if (this.stun > 0) accel = -60;
@@ -482,9 +491,9 @@
 
   // 操控辅助档位：0=硬核 1=标准 2=轻松（可用 ?assist=0/1/2 切换）
   const ASSIST = [
-    { name: '硬核', steer: 1.00, speedFloor: 0.35, conv: 1.00, snow: 1.00, brake: 1.00, radius: 1.00 },
-    { name: '标准', steer: 1.12, speedFloor: 0.45, conv: 1.18, snow: 0.86, brake: 1.10, radius: 1.10 },
-    { name: '轻松', steer: 1.28, speedFloor: 0.55, conv: 1.40, snow: 0.72, brake: 1.22, radius: 1.22 },
+    { name: '硬核', steer: 1.00, speedFloor: 0.35, conv: 1.00, snow: 1.00, brake: 1.00, center: 0.00 },
+    { name: '标准', steer: 1.12, speedFloor: 0.45, conv: 1.18, snow: 0.86, brake: 1.10, center: 0.00 },
+    { name: '轻松', steer: 1.28, speedFloor: 0.55, conv: 1.40, snow: 0.72, brake: 1.22, center: 1.80 },
   ];
   let ASSIST_IDX = 1;
 
@@ -1205,7 +1214,7 @@
 
     // 相机软钳制：只保证镜头不飞出地图太多，绝不把玩家挤出画面
     if (G.map) {
-      const inset = 140;
+      const inset = 40;   // 只允许镜头略微出界，避免露出大面积纯色边缘
       G.camX = Math.max(G.map.x + inset, Math.min(G.map.x + G.map.w - inset, G.camX));
       G.camY = Math.max(G.map.y + inset, Math.min(G.map.y + G.map.h - inset, G.camY));
     }
