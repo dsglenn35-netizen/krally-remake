@@ -297,7 +297,7 @@ html, body, #app, .overlay, #hud, #touch {
 }
 #touch button, #touch, #hud, .overlay, canvas { touch-action: none; }
 /* HUD 暂停按钮 */
-.pause-btn { position:absolute; right:18px; top:96px; pointer-events:auto; width:46px; height:46px;
+.pause-btn { position:absolute; right:18px; top:70px; pointer-events:auto; width:46px; height:46px;
   border-radius:11px; background:rgba(10,18,28,.72); border:1px solid rgba(90,200,255,.45);
   color:#9fe0ff; font-size:13px; letter-spacing:1px; box-shadow:none; cursor:pointer; }
 .pause-btn:active { background:rgba(30,70,105,.9); }
@@ -348,3 +348,9 @@ html, body, #app, .overlay, #hud, #touch {
   .menu-item { padding:5px 12px 5px 14px; }
   .menu { gap:0; }
 }
+/* 帧率徽标 */
+.fps-badge { position:absolute; right:20px; top:128px; pointer-events:none;
+  font-family:"Consolas", ui-monospace, monospace; font-size:14px; letter-spacing:1px;
+  color:#7fe9ff; background:rgba(6,14,22,.62); border:1px solid rgba(70,180,230,.35);
+  border-radius:7px; padding:3px 9px; min-width:64px; text-align:center;
+  text-shadow:0 0 8px rgba(60,200,255,.5); }

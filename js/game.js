@@ -1246,6 +1246,11 @@
       const inY = p.y > m.y + inset && p.y < m.y + m.h - inset;
       if (inX) G.camX = Math.max(m.x + inset, Math.min(m.x + m.w - inset, G.camX));
       if (inY) G.camY = Math.max(m.y + inset, Math.min(m.y + m.h - inset, G.camY));
+      // ?edge=1 调试：把镜头贴到地图左边缘，检查渐隐接缝
+      if (location.search.includes('edge')) {
+        G.camX = m.x + 30;
+        G.camY = m.y + m.h * 0.5;
+      }
     }
 
     // 粒子
@@ -1378,6 +1383,41 @@
         if (t.x > right || t.x + t.w < left || t.y > bottom || t.y + t.h < top) continue;
         // 瓦片位图可能是高清的（S>1），必须按世界尺寸绘制
         ctx.drawImage(t.canvas, t.x, t.y, t.w, t.h);
+      }
+
+      // 地图边缘渐隐：把瓦片内容淡入到出界填色，消除硬接缝
+      const m = G.map;
+      const ec = m.edgeColor || m.theme.grass;
+      const mm = /(\d+)\D+(\d+)\D+(\d+)/.exec(ec);
+      const er = mm ? +mm[1] : 30, eg = mm ? +mm[2] : 34, eb = mm ? +mm[3] : 40;
+      const clearC = 'rgba(' + er + ',' + eg + ',' + eb + ',0)';
+      const solidC = 'rgba(' + er + ',' + eg + ',' + eb + ',1)';
+      const band = Math.min(220, Math.min(m.w, m.h) * 0.18);
+      const vis = (x0, y0, x1, y1) =>
+        x1 > left && x0 < right && y1 > top && y0 < bottom;
+      // 左
+      if (vis(m.x, m.y, m.x + band, m.y + m.h)) {
+        const gL = ctx.createLinearGradient(m.x, 0, m.x + band, 0);
+        gL.addColorStop(0, solidC); gL.addColorStop(1, clearC);
+        ctx.fillStyle = gL; ctx.fillRect(m.x, m.y, band, m.h);
+      }
+      // 右
+      if (vis(m.x + m.w - band, m.y, m.x + m.w, m.y + m.h)) {
+        const gR = ctx.createLinearGradient(m.x + m.w, 0, m.x + m.w - band, 0);
+        gR.addColorStop(0, solidC); gR.addColorStop(1, clearC);
+        ctx.fillStyle = gR; ctx.fillRect(m.x + m.w - band, m.y, band, m.h);
+      }
+      // 上
+      if (vis(m.x, m.y, m.x + m.w, m.y + band)) {
+        const gT = ctx.createLinearGradient(0, m.y, 0, m.y + band);
+        gT.addColorStop(0, solidC); gT.addColorStop(1, clearC);
+        ctx.fillStyle = gT; ctx.fillRect(m.x, m.y, m.w, band);
+      }
+      // 下
+      if (vis(m.x, m.y + m.h - band, m.x + m.w, m.y + m.h)) {
+        const gB = ctx.createLinearGradient(0, m.y + m.h, 0, m.y + m.h - band);
+        gB.addColorStop(0, solidC); gB.addColorStop(1, clearC);
+        ctx.fillStyle = gB; ctx.fillRect(m.x, m.y + m.h - band, m.w, band);
       }
     }
 
