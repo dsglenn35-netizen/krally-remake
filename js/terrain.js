@@ -134,7 +134,7 @@ const Terrain = (() => {
 
     const cv = document.createElement('canvas');
     cv.width = Math.round(w * S); cv.height = Math.round(h * S);
-    const g = cv.getContext('2d');
+    const g = cv.getContext('2d', { alpha: false });
     g.scale(S, S);
     g.translate(-x0, -y0);
 
@@ -142,6 +142,7 @@ const Terrain = (() => {
     const pts = track.points;
 
     // ---------------- 地面 ----------------
+    if (opts.onStage) opts.onStage('ground');
     g.fillStyle = T.grass;
     g.fillRect(x0, y0, w, h);
 
@@ -258,6 +259,7 @@ const Terrain = (() => {
     g.restore();
 
     // ---------------- 岩体 / 悬崖（有体积，带投影）----------------
+    if (opts.onStage) opts.onStage('cliffs');
     (function drawCliffs() {
       const hex2rgb = (h) => {
         const n = parseInt(h.replace('#', ''), 16);
@@ -409,6 +411,7 @@ const Terrain = (() => {
     })();
 
     // ---------------- 路面 ----------------
+    if (opts.onStage) opts.onStage('road');
     function strokePath(width, color, dx, dy) {
       g.beginPath();
       for (let i = 0; i < pts.length; i++) {
@@ -649,6 +652,7 @@ const Terrain = (() => {
     g.restore();
 
     // ---------------- 检查点门 ----------------
+    if (opts.onStage) opts.onStage('checkpoints');
     if (track.checkpoints && track.checkpoints.length) {
       track.checkpoints.forEach((cpS, i) => {
         const p = track.at(cpS);
@@ -673,6 +677,7 @@ const Terrain = (() => {
     }
 
     // ---------------- 场景物 ----------------
+    if (opts.onStage) opts.onStage('objects');
     const roadDist = (x, y) => Math.abs(track.nearest(x, y).lateral);
 
     // ---- 预渲染精灵（避免逐物体 filter/blur，烘焙才够快）----
@@ -992,6 +997,7 @@ const Terrain = (() => {
     }
 
     // ---------------- 光照 ----------------
+    if (opts.onStage) opts.onStage('lighting');
     const light = g.createRadialGradient(x0 + w * 0.42, y0 + h * 0.32, 0, x0 + w * 0.42, y0 + h * 0.32, Math.max(w, h) * 0.75);
     light.addColorStop(0, 'rgba(255,240,210,.10)');
     light.addColorStop(0.5, 'rgba(0,0,0,0)');
@@ -999,19 +1005,16 @@ const Terrain = (() => {
     g.fillStyle = light;
     g.fillRect(x0, y0, w, h);
 
-    // 取边缘平均色，供镜头出界时填底（消除接缝）
+    // 出界填底色：直接由主题色推算（避免 getImageData 触发 GPU 回读，硬件加速下会卡死）
     let edgeColor = T.grass;
     try {
-      const sc = cv.getContext('2d');
-      const spots = [[2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3],
-                     [Math.floor(w / 2), 2], [Math.floor(w / 2), h - 3],
-                     [2, Math.floor(h / 2)], [w - 3, Math.floor(h / 2)]];
-      let er = 0, eg = 0, eb = 0, n = 0;
-      for (const sp of spots) {
-        const d = sc.getImageData(sp[0], sp[1], 1, 1).data;
-        er += d[0]; eg += d[1]; eb += d[2]; n++;
-      }
-      edgeColor = 'rgb(' + Math.round(er / n) + ',' + Math.round(eg / n) + ',' + Math.round(eb / n) + ')';
+      const hex2 = (hx) => {
+        const n = parseInt(hx.replace('#', ''), 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      };
+      const a = hex2(T.grass), b = hex2(T.grassLight);
+      edgeColor = 'rgb(' + Math.round((a[0] * 1.4 + b[0] * 0.6) / 2) + ',' +
+        Math.round((a[1] * 1.4 + b[1] * 0.6) / 2) + ',' + Math.round((a[2] * 1.4 + b[2] * 0.6) / 2) + ')';
     } catch (e) {}
 
     // 小地图缩略图（避免每帧缩放整张大图）
@@ -1033,6 +1036,7 @@ const Terrain = (() => {
       return { canvas: cv, tiles: [], x: x0, y: y0, w: w, h: h, theme: T, thumb: th0, edgeColor: edgeColor, scale: S };
     }
 
+    if (opts.onStage) opts.onStage('tiles');
     // 把整张地图切成 512 的瓦片，之后只按可视范围绘制；大画布可以释放
     const TILE = 512;
     const tiles = [];
@@ -1042,7 +1046,7 @@ const Terrain = (() => {
         const th = Math.min(TILE, h - ty);
         const tc = document.createElement('canvas');
         tc.width = Math.round(tw * S); tc.height = Math.round(th * S);
-        tc.getContext('2d').drawImage(
+        tc.getContext('2d', { alpha: false }).drawImage(
           cv, Math.round(tx * S), Math.round(ty * S), Math.round(tw * S), Math.round(th * S),
           0, 0, tc.width, tc.height);
         tiles.push({ x: x0 + tx, y: y0 + ty, w: tw, h: th, canvas: tc });

@@ -567,7 +567,14 @@
         const hdParam = parseFloat((/hd=([\d.]+)/.exec(location.search) || [])[1]);
         const mapScale = hdParam || (isMobileDev ? 1 : 1.5);
         const mapDetail = isMobileDev ? 1 : 1.35;
-        G.mapCache[mapKey] = Terrain.build(track, defTheme, { scale: mapScale, detail: mapDetail });
+        const STAGE_ZH = { ground: '地面', cliffs: '岩体', road: '路面', checkpoints: '检查点', objects: '植被', lighting: '光照', tiles: '切块' };
+        G.mapCache[mapKey] = Terrain.build(track, defTheme, {
+          scale: mapScale, detail: mapDetail,
+          onStage: (st) => {
+            const el = document.querySelector('#loading span');
+            if (el) el.textContent = '生成赛道… ' + (STAGE_ZH[st] || st);
+          },
+        });
         G.mapScale = mapScale;
         G.surfaceGrip = (typeof Terrain.gripOf === 'function') ? Terrain.gripOf(defTheme) : 1;
       } catch (e) {
