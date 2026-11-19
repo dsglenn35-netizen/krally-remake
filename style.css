@@ -367,3 +367,33 @@ html, body, #app, .overlay, #hud, #touch {
 #posChart { display:block; margin:2px auto 0; width:min(560px, 74vw); height:auto;
   background:rgba(6,12,20,.6); border:1px solid rgba(70,150,200,.25); border-radius:8px; }
 .home-foot .ver { color:#3f5d70; font-size:11px; letter-spacing:2px; margin-left:auto; }
+/* 关于 / 制作名单 */
+.ver-link { background:transparent; border:1px solid rgba(90,180,220,.30); color:#7fa8c0;
+  font-size:11px; letter-spacing:2px; padding:5px 14px; border-radius:7px; box-shadow:none; cursor:pointer; }
+.ver-link:hover { background:rgba(20,50,75,.5); color:#bfe9ff; }
+.credits-card { background:rgba(12,18,30,.96); border:1px solid rgba(80,185,235,.35); border-radius:16px;
+  padding:24px 34px; display:flex; flex-direction:column; gap:9px; max-width:min(680px, 92vw);
+  box-shadow:0 0 70px rgba(0,150,255,.16); }
+.credits-card h1 { color:#eaf6ff; font-size:24px; letter-spacing:6px; margin-bottom:4px;
+  text-shadow:0 0 16px rgba(40,200,255,.5); }
+.cr-line { color:#9fc2d8; font-size:14px; line-height:1.7; letter-spacing:.5px; }
+.cr-line b { color:#7fe9ff; font-weight:600; margin-right:4px; }
+.cr-dim { color:#5b8299; font-size:13px; font-style:italic; margin:8px 0 12px; text-align:center; }
+.credits-card .ghost { align-self:center; min-width:130px; }
+/* HUD 布局对齐原作：左=名次+时间，右=圈数+速度 */
+.hud-pos-row { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+.posbadge { font-size:26px; font-weight:800; font-style:italic; color:#fff; letter-spacing:1px;
+  text-shadow:0 0 12px rgba(255,60,160,.65); }
+.posbadge small { font-size:12px; color:#9fb6c8; margin-left:2px; }
+.posbar { display:block; width:74px; height:5px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }
+.posbar i { display:block; height:100%; background:linear-gradient(90deg,#28e07a,#8ef03a); transition:width .2s; }
+.time-label { font-size:10px; letter-spacing:5px; color:#5d8299; margin-top:4px; }
+.hud-right .lap { font-size:16px; letter-spacing:2px; color:#8fe6ff; text-shadow:0 0 10px rgba(0,170,255,.5); }
+.hud-right .speed { margin-top:2px; }
+.hud-right .pause-btn { top:52px; }
+.hud-right .fps-badge { top:104px; }
+/* 完赛横幅（方格旗风格） */
+.banner.finish { font-family:"Arial Black", "Segoe UI", sans-serif; letter-spacing:14px;
+  background:linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  border-top:3px solid rgba(255,255,255,.85); border-bottom:3px solid rgba(255,255,255,.85);
+  padding:10px 40px; text-shadow:0 0 18px rgba(120,220,255,.9); }

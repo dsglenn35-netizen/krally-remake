@@ -17,7 +17,8 @@
     }
     VW = canvas.width; VH = canvas.height;
     // 视野：高度约 900 世界单位，宽度不超过 1700
-    ZOOM = Math.max(VH / 900, VW / 1700);
+    // 对齐原作视野：竖向可见约 660 世界单位（原来 900），横向约 1250
+    ZOOM = Math.max(VH / 660, VW / 1250);
   }
   addEventListener('resize', resizeCanvas);
   addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
@@ -315,6 +316,7 @@
         if (this.lap > G.laps && !this.finished) {
           this.finished = true;
           this.finishTime = G.raceTime;
+          if (this.isPlayer) showBanner('FINISH', 'finish');
           if (this.isPlayer) endRace();
         }
       }
@@ -1122,11 +1124,12 @@
     el.classList.remove('hidden');
     G.tauntTimer = 3.2;
   }
-  function showBanner(text) {
+  function showBanner(text, kind) {
     const el = document.getElementById('banner');
     el.textContent = text;
+    el.classList.toggle('finish', kind === 'finish');
     el.classList.remove('hidden');
-    G.bannerTimer = 1.4;
+    G.bannerTimer = kind === 'finish' ? 2.6 : 1.4;
   }
   function togglePause() {
     if (G.state === 'racing') { G.state = 'paused'; if (SND) { SND.engineStop(); SND.skidStop(); } document.getElementById('pause').classList.remove('hidden'); }
@@ -1286,8 +1289,17 @@
         G.hudT = 0;
         setTxt('raceTime', fmtTime(G.raceTime));
         setTxt('spdNum', String(Math.round(Math.abs(p.speed) * 0.72)));
-        setTxt('posNum', String(positionOf(p)));
         setTxt('bestLap', T('best') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--:--.--'));
+        // 名次徽标（1ST / 2ND / 3RD / 4TH）+ 进度条
+        const pos = positionOf(p);
+        const badge = document.getElementById('posBadge');
+        if (badge && badge._p !== pos) {
+          badge._p = pos;
+          const suf = pos === 1 ? 'ST' : pos === 2 ? 'ND' : pos === 3 ? 'RD' : 'TH';
+          badge.innerHTML = pos + '<small>' + suf + '</small>';
+          const pb = document.getElementById('posBar');
+          if (pb) pb.style.width = Math.max(4, Math.min(100, (p.progress / (G.track.length * G.laps)) * 100)) + '%';
+        }
       }
       setTxt('lapNum', String(Math.max(1, Math.min(p.lap, LAPS))));
       const f = document.getElementById('fps');
@@ -2048,6 +2060,17 @@
   if (exitHome) exitHome.onclick = exitGame;
   const exitBtn = document.getElementById('exitBtn');
   if (exitBtn) exitBtn.onclick = exitGame;
+  const creditBtn = document.getElementById('creditBtn');
+  if (creditBtn) creditBtn.onclick = () => {
+    if (SND) SND.uiClick();
+    document.getElementById('credits').classList.remove('hidden');
+  };
+  const creditsBack = document.getElementById('creditsBack');
+  if (creditsBack) creditsBack.onclick = () => {
+    if (SND) SND.uiClick();
+    document.getElementById('credits').classList.add('hidden');
+  };
+
   const confirmYes = document.getElementById('confirmYes');
   if (confirmYes) confirmYes.onclick = () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); };
   const confirmNo = document.getElementById('confirmNo');
@@ -2055,6 +2078,10 @@
   const confirmBox = document.getElementById('confirm');
   if (confirmBox) confirmBox.onclick = (e) => { if (e.target === confirmBox) closeConfirm(); };
   if (location.search.includes('showconfirm')) setTimeout(() => exitGame(), 300);
+  if (location.search.includes('credits')) setTimeout(() => {
+    const c = document.getElementById('credits');
+    if (c) c.classList.remove('hidden');
+  }, 300);
   // ?resultdemo=1 直接展示结算界面（便于排版调试）
   if (location.search.includes('resultdemo')) {
     setTimeout(() => {

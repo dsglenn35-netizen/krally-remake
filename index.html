@@ -49,6 +49,7 @@
           <div class="home-foot">
             <span id="currentCarInfo"></span>
             <button id="exitHome" class="exit-link" data-i18n="exitApp">退出游戏</button>
+            <button id="creditBtn" class="ver-link">关于</button>
             <span class="ver">v1.0.0</span>
           </div>
         </div>
@@ -180,18 +181,21 @@
 
   <div id="hud" class="hidden">
     <div class="hud-left">
-      <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
+      <div class="hud-pos-row">
+        <span class="posbadge" id="posBadge">4<small>TH</small></span>
+        <span class="posbar"><i id="posBar" style="width:25%"></i></span>
+      </div>
+      <div class="time-label" data-i18n="timeLabel">时间</div>
       <div class="time" id="raceTime">0:00.00</div>
       <div class="best" id="bestLap">BEST --:--.--</div>
       <div class="best" id="ghostLap" style="color:#8fd8ff"></div>
       <div class="best" id="ghostDelta"></div>
-
     </div>
     <div class="hud-right">
-      <div id="fps" class="fps-badge">-- FPS</div>
-      <button id="pauseBtn" class="pause-btn" aria-label="pause">❚❚</button>
-      <div class="pos"><span id="posNum">4</span><small>/4</small></div>
+      <div class="lap"><span data-i18n="lapLabel">圈</span> <span id="lapNum">1</span>/<span id="lapTotal">3</span></div>
       <div class="speed"><span id="spdNum">0</span><small>km/h</small></div>
+      <button id="pauseBtn" class="pause-btn" aria-label="pause">❚❚</button>
+      <div id="fps" class="fps-badge">-- FPS</div>
     </div>
     <div class="weapon" id="weaponBox"><span id="weaponName">--</span><small id="weaponAmmo"></small></div>
     <div class="healthbar"><i id="healthFill"></i></div>
@@ -206,6 +210,19 @@
       <button id="quitBtn" class="danger" data-i18n="abort">终止比赛</button>
       <button id="exitBtn" class="danger" data-i18n="exitApp">退出游戏</button>
       <button id="assistBtn" class="assist">手感：标准</button>
+    </div>
+  </div>
+
+  <div id="credits" class="overlay hidden">
+    <div class="credits-card">
+      <h1>关于本作</h1>
+      <p class="cr-line"><b>原作</b>　《烈火战车 / K-Rally》— Infinite Dreams，2006，Symbian S60（SISX）</p>
+      <p class="cr-line"><b>性质</b>　个人情怀向重制（fan remake），非官方、不商用</p>
+      <p class="cr-line"><b>素材</b>　仅复用原作文本（台词 / 车手名 / 赞助商名）</p>
+      <p class="cr-line">美术、音频、物理、赛道全部程序化重写，未使用原作图像或音频</p>
+      <p class="cr-line"><b>技术</b>　HTML5 Canvas 2D + WebAudio，Android WebView 封装</p>
+      <p class="cr-dim">“当年在诺基亚上跑的那台车，现在还在跑。”</p>
+      <button id="creditsBack" class="ghost">返回</button>
     </div>
   </div>
 
