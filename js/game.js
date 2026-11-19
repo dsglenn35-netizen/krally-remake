@@ -203,9 +203,11 @@
 
       // 转向（低抓地路面转向更迟滞）
       const steerInput = input.steer;
-      const speedFactor = clamp(1 - this.speed / (this.maxSpeed * 1.6), 0.35, 1);
-      const grip = this.grip;
-      const steerRate = 2.9 * (0.72 + 0.28 * grip);
+      const speedFactor = clamp(1 - this.speed / (this.maxSpeed * 1.6), ASSIST[ASSIST_IDX].speedFloor, 1);
+      const AS = ASSIST[ASSIST_IDX];
+      // 雪地在轻松档下不那么滑
+      const grip = this.grip < 0.7 ? Math.min(1, this.grip / AS.snow) : this.grip;
+      const steerRate = 2.9 * (0.72 + 0.28 * grip) * AS.steer;
       this.angle += steerInput * steerRate * dt * speedFactor * this.handling * (offroad ? 0.7 : 1);
 
       // 加速 / 刹车
@@ -214,7 +216,7 @@
       else {
         // 低抓地路面起步/加速也更弱（打滑损失）
         accel = input.gas ? this.accelStat * (0.60 + 0.40 * grip) : -90;
-        if (input.brake) accel -= 520 * (0.55 + 0.45 * grip);   // 雪地刹车距离更长
+        if (input.brake) accel -= 520 * (0.55 + 0.45 * grip) * ASSIST[ASSIST_IDX].brake;   // 雪地刹车距离更长
       }
       if (this.boost > 0) { accel += 520; this.boost -= dt; }
 
@@ -224,7 +226,7 @@
       this.speed = clamp(this.speed, offroad ? -60 : -150, maxSpeed);
 
       // 速度方向向车头收敛：抓地力越低越慢 → 产生滑移
-      const conv = grip * (offroad ? 5.0 : 9.0);
+      const conv = grip * (offroad ? 5.0 : 9.0) * ASSIST[ASSIST_IDX].conv;
       const dAng = wrapAngle(this.angle - this.velAngle);
       this.velAngle += dAng * Math.min(1, conv * dt);
       if (Math.abs(this.speed) < 45) this.velAngle = this.angle;
@@ -478,6 +480,14 @@
     });
   }
 
+  // 操控辅助档位：0=硬核 1=标准 2=轻松（可用 ?assist=0/1/2 切换）
+  const ASSIST = [
+    { name: '硬核', steer: 1.00, speedFloor: 0.35, conv: 1.00, snow: 1.00, brake: 1.00, radius: 1.00 },
+    { name: '标准', steer: 1.12, speedFloor: 0.45, conv: 1.18, snow: 0.86, brake: 1.10, radius: 1.10 },
+    { name: '轻松', steer: 1.28, speedFloor: 0.55, conv: 1.40, snow: 0.72, brake: 1.22, radius: 1.22 },
+  ];
+  let ASSIST_IDX = 1;
+
   // ?cscale=0.8 调整车辆视觉大小
   (function () {
     const m = /cscale=([\d.]+)/.exec(location.search);
@@ -485,6 +495,8 @@
     // ?track=N 直接指定地图（调试/分享用）
     const t = /track=(\d+)/.exec(location.search);
     if (t) { G.selectedTrack = Math.max(0, Math.min(TRACKS.length - 1, parseInt(t[1], 10))); }
+    const a = /assist=(\d)/.exec(location.search);
+    if (a) ASSIST_IDX = Math.max(0, Math.min(2, parseInt(a[1], 10)));
   })();
 
   function startRace(trackIdx, opts) {
@@ -1824,6 +1836,25 @@
     try { window.close(); } catch (e) {}
     toast('网页版请直接关闭标签页');
   }
+  // 手感档位：暂停面板可循环切换（0 硬核 / 1 标准 / 2 轻松）
+  function assistLabel() { return '手感：' + ASSIST[ASSIST_IDX].name; }
+  function refreshAssistBtn() {
+    const b = document.getElementById('assistBtn');
+    if (b) b.textContent = assistLabel();
+  }
+  try {
+    const saved = localStorage.getItem('krally_assist');
+    if (saved != null) ASSIST_IDX = Math.max(0, Math.min(2, parseInt(saved, 10) || 0));
+  } catch (e) {}
+  const assistBtn = document.getElementById('assistBtn');
+  if (assistBtn) assistBtn.onclick = () => {
+    ASSIST_IDX = (ASSIST_IDX + 1) % 3;
+    try { localStorage.setItem('krally_assist', String(ASSIST_IDX)); } catch (e) {}
+    refreshAssistBtn();
+    if (SND) SND.uiClick();
+  };
+  refreshAssistBtn();
+
   const exitHome = document.getElementById('exitHome');
   if (exitHome) exitHome.onclick = exitGame;
   const exitBtn = document.getElementById('exitBtn');
