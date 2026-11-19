@@ -1,0 +1,70 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#000}</style></head>
+<body><canvas id="cv" width="512" height="512"></canvas>
+<script>
+const cv=document.getElementById('cv'), g=cv.getContext('2d'), S=512;
+
+// 背景
+const bg = g.createRadialGradient(S*0.34,S*0.26,S*0.04,S*0.5,S*0.56,S*0.82);
+bg.addColorStop(0,'#1b2b45'); bg.addColorStop(0.5,'#0b1421'); bg.addColorStop(1,'#05070c');
+g.fillStyle=bg; g.fillRect(0,0,S,S);
+
+// 速度线（很淡）
+g.save(); g.translate(S*0.5,S*0.5); g.rotate(-0.16);
+for(let i=0;i<3;i++){
+  const y=-S*0.16+i*S*0.19, w=S*0.74-i*S*0.08;
+  const gr=g.createLinearGradient(-w/2,0,w/2,0);
+  gr.addColorStop(0,'rgba(0,200,255,0)');
+  gr.addColorStop(0.4,'rgba(0,200,255,.16)');
+  gr.addColorStop(0.8,'rgba(120,235,255,.22)');
+  gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr; g.fillRect(-w/2,y,w,S*0.05);
+}
+g.restore();
+
+// 号码牌（略微倾斜 + 投影）
+g.save();
+g.translate(S*0.5,S*0.455); g.rotate(-0.13);
+const w=S*0.335, h=S*0.265, r=S*0.045;
+function plate(x,y){
+  g.beginPath();
+  g.moveTo(-w+r,-h); g.lineTo(w-r,-h); g.quadraticCurveTo(w,-h,w,-h+r);
+  g.lineTo(w,h-r); g.quadraticCurveTo(w,h,w-r,h); g.lineTo(-w+r,h);
+  g.quadraticCurveTo(-w,h,-w,h-r); g.lineTo(-w,-h+r); g.quadraticCurveTo(-w,-h,-w+r,-h);
+  g.closePath();
+}
+// 投影
+g.save();
+g.shadowColor='rgba(0,0,0,.65)'; g.shadowBlur=S*0.06; g.shadowOffsetY=S*0.022;
+g.fillStyle='#000'; plate(0,0); g.fill();
+g.restore();
+// 牌面
+const pg=g.createLinearGradient(-w,-h,w,h);
+pg.addColorStop(0,'#ffffff'); pg.addColorStop(0.45,'#f3f1e9'); pg.addColorStop(1,'#d9d6ca');
+g.fillStyle=pg; plate(0,0); g.fill();
+// 内边（薄描边）
+g.strokeStyle='rgba(0,0,0,.18)'; g.lineWidth=S*0.006; plate(0,0); g.stroke();
+
+// 数字 7
+g.fillStyle='#15181e';
+g.font='bold '+Math.round(S*0.33)+'px "Arial Narrow", Arial, sans-serif';
+g.textAlign='center'; g.textBaseline='middle';
+g.fillText('7',0,S*0.012);
+g.restore();
+
+// 方格旗
+g.save();
+g.translate(S*0.60,S*0.775); g.rotate(-0.13);
+const cell=S*0.052;
+for(let rr=0;rr<2;rr++)for(let c=-3;c<=3;c++){
+  g.fillStyle=(rr+c)%2?'rgba(250,250,248,.96)':'rgba(12,17,25,.96)';
+  g.fillRect(c*cell, rr*cell, cell, cell);
+}
+g.restore();
+
+// 暗角
+const vg=g.createRadialGradient(S*0.5,S*0.5,S*0.30,S*0.5,S*0.5,S*0.74);
+vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+g.fillStyle=vg; g.fillRect(0,0,S,S);
+
+document.title='OK';
+</script></body></html>
