@@ -4,7 +4,7 @@
 含生涯模式、车库、商店、车辆升级、AI 战术层。
 
 > 仓库：https://github.com/dsglenn35-netizen/krally-remake
-> 发布：https://github.com/dsglenn35-netizen/krally-remake/releases/tag/v0.1.0
+> 正式版：**v1.0.0** — https://github.com/dsglenn35-netizen/krally-remake/releases/tag/v1.0.0
 > 许可：MIT（见 [LICENSE](LICENSE)）
 
 ## 运行
@@ -14,7 +14,21 @@
 | 浏览器 | 直接打开 `index.html`（或 `python -m http.server` 后访问） |
 | Android | 安装 `KRallyRemake.apk`（minSdk 24 / targetSdk 35） |
 
-操作：WASD / 方向键 驾驶，SPACE 开火，SHIFT 弃武器，P 暂停，M 静音；手机端用屏幕虚拟按键。
+操作：WASD / 方向键 驾驶，SPACE 开火，SHIFT 弃武器，P 暂停，M 静音；手机端用屏幕虚拟按键（◀ ▶ / 刹车 / 油门 / 开火）。
+暂停面板可切换**手感档位**：硬核 / 标准 / 轻松（轻松档带自动回正，会把车拉回赛道中线）。
+
+性能：Android 端默认**硬件加速**，90Hz 屏实测 90 FPS；如需回退用 `--es hw 0` 启动。
+
+## 1.0 内容概览
+
+| 模块 | 内容 |
+|---|---|
+| 赛道 | 9 张内置赛道（夜景海港 / 雪山 / 沙漠 / 丛林 / 集装箱码头 / 红岩峡谷 / 秋日林道 …）+ 自建赛道 |
+| 车手 | 14 名，各自属性与特权（抗撞 / 极速 / 抓地 / 奖金 …），独立生涯存档与 RP 段位 |
+| 车辆 | 4 台车 + 引擎 / 轮胎 / 武器三类升级 |
+| 模式 | 生涯（三档锦标赛）、快速比赛、排位积分（RP）、幽灵车（多圈最佳/平均对比） |
+| 玩法 | 火箭 / 地雷 / 涡轮，AI 战术层（封堵、故意撞击、抢道具） |
+| 其他 | 赛道编辑器（闭合/开放 + 检查点）、雪地打滑物理、中英双语 |
 
 ## 玩法系统
 

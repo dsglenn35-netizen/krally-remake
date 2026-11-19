@@ -990,6 +990,15 @@
       if (Math.hypot(ch.x - car.x, ch.y - car.y) < 60) brake = false;
     }
 
+    // 低抓地路面（雪地）：AI 自动限速 + 提前刹车 + 减小转向，否则会一直打滑冲出赛道
+    const gripAI = car.grip || 1;
+    if (gripAI < 0.95) {
+      const safe = 0.62 + 0.38 * gripAI;              // 雪地 ≈ 0.82
+      if (car.speed > car.maxSpeed * safe) gas = false;
+      if (curv > 0.28 && car.speed > car.maxSpeed * safe * 0.78) brake = true;
+      steer *= (0.72 + 0.28 * gripAI);
+    }
+
     const gasOut = gas && (tactic !== 'race' ? true : blocked < 0.55);
 
     // ---- 武器 ----
@@ -2046,6 +2055,16 @@
   const confirmBox = document.getElementById('confirm');
   if (confirmBox) confirmBox.onclick = (e) => { if (e.target === confirmBox) closeConfirm(); };
   if (location.search.includes('showconfirm')) setTimeout(() => exitGame(), 300);
+  // ?resultdemo=1 直接展示结算界面（便于排版调试）
+  if (location.search.includes('resultdemo')) {
+    setTimeout(() => {
+      document.getElementById('resultTitle').textContent = T('finish') + ' 2/4';
+      document.getElementById('resultStats').innerHTML =
+        '总时间 0:55.32<br>最佳单圈 0:16.72<br>名次变化 <span style="color:#7fe9ff">4 → 2</span>';
+      document.getElementById('resultRewards').textContent = '+$120 · +45 经验 · +12 RP · 青铜 1012';
+      document.getElementById('result').classList.remove('hidden');
+    }, 400);
+  }
   // ?smoke=1：依次打开每个界面，把异常写进标题（无头环境自检）
   if (location.search.includes('smoke')) {
     const errs = [];

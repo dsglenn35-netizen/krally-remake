@@ -49,6 +49,7 @@
           <div class="home-foot">
             <span id="currentCarInfo"></span>
             <button id="exitHome" class="exit-link" data-i18n="exitApp">退出游戏</button>
+            <span class="ver">v1.0.0</span>
           </div>
         </div>
       </div>
@@ -220,13 +221,15 @@
   </div>
 
   <div id="result" class="overlay hidden">
-    <h1 id="resultTitle">FINISH</h1>
-    <canvas id="posChart" width="560" height="150"></canvas>
-    <div class="stats" id="resultStats"></div>
-    <div class="rewards" id="resultRewards"></div>
-    <div class="btnrow">
-      <button id="againBtn">继续</button>
-      <button class="ghost" id="menuBtn" data-i18n="menu">主菜单</button>
+    <div class="result-card">
+      <h1 id="resultTitle">FINISH</h1>
+      <canvas id="posChart" width="560" height="132"></canvas>
+      <div class="stats" id="resultStats"></div>
+      <div class="rewards" id="resultRewards"></div>
+      <div class="btnrow">
+        <button id="againBtn">继续</button>
+        <button class="ghost" id="menuBtn" data-i18n="menu">主菜单</button>
+      </div>
     </div>
   </div>
 
