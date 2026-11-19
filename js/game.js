@@ -628,6 +628,7 @@
     document.getElementById('menu').classList.add('hidden');
     document.getElementById('result').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
+    setTouchVisible(true);
     document.getElementById('lapTotal').textContent = G.laps;
     updateWeaponHUD();
     showBanner(T('ready'));
@@ -1514,6 +1515,12 @@
   }
 
   // 首页背景：赛道弧线 + 玩家车（一次性绘制，不参与每帧）
+  // 触屏按键：只在比赛中显示
+  function setTouchVisible(on) {
+    const el = document.getElementById('touch');
+    if (el) el.classList.toggle('hidden', !on);
+  }
+
   function drawMenuBg() {
     const cv = document.getElementById('menuBg');
     if (!cv || !cv.clientWidth) return;
@@ -1570,6 +1577,7 @@
     });
     G.view = name;
     refreshTopbar();
+    setTouchVisible(false);
     if (name === 'home') {
       renderHome();
       drawMenuBg();
