@@ -1,7 +1,9 @@
-# K-RALLY 重制版（Android / Web 原型）
+# K-RALLY 重制版（Symbian SISX 版《烈火战车》）
 
-用解包出的原作文本 + 完全重画的程序化美术 + 程序化音频，从零实现的可玩原型。
-含生涯模式、车库、商店、车辆升级、AI 战术层。
+> **本作是 Symbian SISX 版本《烈火战车 / K-Rally》（Infinite Dreams，2006）的粉丝重制版。**
+> 只复用了原作的**文本**（台词、车手名、赞助商名）；美术、音频、物理、赛道全部为程序化重写，未使用原作任何图像/音频素材。
+
+从零实现的可玩重制：生涯模式、车库、商店、车辆升级、AI 战术层，Android 端 90 FPS。
 
 > 仓库：https://github.com/dsglenn35-netizen/krally-remake
 > 正式版：**v1.0.0** — https://github.com/dsglenn35-netizen/krally-remake/releases/tag/v1.0.0
