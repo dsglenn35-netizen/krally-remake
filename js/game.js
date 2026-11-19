@@ -187,6 +187,9 @@
       this.thrust = 0;
       this.drift = 0;
       this.px = this.x; this.py = this.y;
+      this.velAngle = this.angle;      // 实际速度方向（与车头方向的差 = 滑移）
+      this.slip = 0;
+      this.grip = G.surfaceGrip || 1;  // 路面抓地力（雪地 0.52）
       this.lateralBias = rand(-0.45, 0.45);
     }
 
@@ -198,17 +201,20 @@
       const halfW = track.width / 2;
       const offroad = Math.abs(near.lateral) > halfW * 0.92;
 
-      // 转向
+      // 转向（低抓地路面转向更迟滞）
       const steerInput = input.steer;
       const speedFactor = clamp(1 - this.speed / (this.maxSpeed * 1.6), 0.35, 1);
-      this.angle += steerInput * 2.9 * dt * speedFactor * this.handling * (offroad ? 0.7 : 1);
+      const grip = this.grip;
+      const steerRate = 2.9 * (0.72 + 0.28 * grip);
+      this.angle += steerInput * steerRate * dt * speedFactor * this.handling * (offroad ? 0.7 : 1);
 
       // 加速 / 刹车
       let accel = 0;
       if (this.stun > 0) accel = -60;
       else {
-        accel = input.gas ? this.accelStat : -90;
-        if (input.brake) accel -= 520;
+        // 低抓地路面起步/加速也更弱（打滑损失）
+        accel = input.gas ? this.accelStat * (0.60 + 0.40 * grip) : -90;
+        if (input.brake) accel -= 520 * (0.55 + 0.45 * grip);   // 雪地刹车距离更长
       }
       if (this.boost > 0) { accel += 520; this.boost -= dt; }
 
@@ -217,13 +223,21 @@
       this.speed -= this.speed * (offroad ? 2.4 : 0.55) * dt;
       this.speed = clamp(this.speed, offroad ? -60 : -150, maxSpeed);
 
-      // 侧滑（漂移视觉）
-      this.drift = lerp(this.drift, offroad ? 0.35 : Math.abs(steerInput) * 0.55 * (this.speed / this.maxSpeed), dt * 6);
+      // 速度方向向车头收敛：抓地力越低越慢 → 产生滑移
+      const conv = grip * (offroad ? 5.0 : 9.0);
+      const dAng = wrapAngle(this.angle - this.velAngle);
+      this.velAngle += dAng * Math.min(1, conv * dt);
+      if (Math.abs(this.speed) < 45) this.velAngle = this.angle;
+      this.slip = clamp(wrapAngle(this.angle - this.velAngle), -1.0, 1.0);
 
-      // 位移
+      // 滑移视觉强度
+      const slipAmt = Math.min(1, Math.abs(this.slip) * 2.2);
+      this.drift = lerp(this.drift, offroad ? 0.35 : Math.max(slipAmt * 0.9, Math.abs(steerInput) * 0.5 * (this.speed / this.maxSpeed)), dt * 6);
+
+      // 位移（沿实际速度方向）
       this.px = this.x; this.py = this.y;
-      this.x += Math.cos(this.angle) * this.speed * dt;
-      this.y += Math.sin(this.angle) * this.speed * dt;
+      this.x += Math.cos(this.velAngle) * this.speed * dt;
+      this.y += Math.sin(this.velAngle) * this.speed * dt;
 
       // 进度 / 圈数（用累计里程判定，避免 s 跳变误判）
       this.prevS = this.s;
@@ -291,10 +305,21 @@
         }
       }
 
-      // 拖尾粒子
-      if (Math.random() < this.drift * 0.9) {
-        G.particles.push({ x: this.x, y: this.y, vx: rand(-20, 20), vy: rand(-20, 20), life: 0.5, max: 0.5,
-          r: rand(2, 5), color: offroad ? '120,90,60' : '160,200,255' });
+      // 拖尾粒子（雪地扬雪 / 泥地扬尘 / 路面火花）
+      const snowy = this.grip < 0.7 && !offroad;
+      const rate = this.drift * (snowy ? 1.5 : 0.9);
+      if (Math.random() < rate) {
+        const col = snowy ? '238,246,255' : (offroad ? '120,90,60' : '160,200,255');
+        G.particles.push({ x: this.x, y: this.y, vx: rand(-26, 26), vy: rand(-26, 26),
+          life: snowy ? 0.62 : 0.5, max: snowy ? 0.62 : 0.5,
+          r: rand(2, snowy ? 6.5 : 5), color: col });
+      }
+      // 雪地：明显打滑时在车后额外喷一团雪
+      if (snowy && Math.abs(this.slip) > 0.25 && Math.abs(this.speed) > 140 && Math.random() < 0.5) {
+        const bx = this.x - Math.cos(this.velAngle) * 18;
+        const by = this.y - Math.sin(this.velAngle) * 18;
+        G.particles.push({ x: bx, y: by, vx: rand(-40, 40), vy: rand(-40, 40),
+          life: 0.75, max: 0.75, r: rand(4, 9), color: '245,250,255' });
       }
       if (this.stun > 0) this.stun -= dt;
     }
@@ -509,7 +534,15 @@
       try {
         const defIdx = (trackIdx == null ? G.selectedTrack : trackIdx);
         const defTheme = (TRACKS[defIdx] && TRACKS[defIdx].theme != null) ? TRACKS[defIdx].theme : defIdx;
-        G.mapCache[mapKey] = Terrain.build(track, defTheme);
+        // 按设备分档：桌面 1.5× 烘焙 / 手机 1×；?hd=2 可手动指定
+        const isMobileDev = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ||
+          (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+        const hdParam = parseFloat((/hd=([\d.]+)/.exec(location.search) || [])[1]);
+        const mapScale = hdParam || (isMobileDev ? 1 : 1.5);
+        const mapDetail = isMobileDev ? 1 : 1.35;
+        G.mapCache[mapKey] = Terrain.build(track, defTheme, { scale: mapScale, detail: mapDetail });
+        G.mapScale = mapScale;
+        G.surfaceGrip = (typeof Terrain.gripOf === 'function') ? Terrain.gripOf(defTheme) : 1;
       } catch (e) {
         G.mapCache[mapKey] = null;
         window.__MAPERR = (e && e.message) + ' | ' + ((e && e.stack) ? e.stack.split('\n')[1] : '');
@@ -1068,7 +1101,11 @@
       fpsShown = Math.round(fpsFrames / fpsAcc);
       fpsAcc = 0; fpsFrames = 0;
       const el = document.getElementById('fps');
-      if (el) el.textContent = fpsShown + ' FPS';
+      if (el) {
+        let txt = fpsShown + ' FPS';
+
+        el.textContent = txt;
+      }
     }
     try {
       update(dt);
@@ -1270,7 +1307,8 @@
       for (let i = 0; i < tiles.length; i++) {
         const t = tiles[i];
         if (t.x > right || t.x + t.w < left || t.y > bottom || t.y + t.h < top) continue;
-        ctx.drawImage(t.canvas, t.x, t.y);
+        // 瓦片位图可能是高清的（S>1），必须按世界尺寸绘制
+        ctx.drawImage(t.canvas, t.x, t.y, t.w, t.h);
       }
     }
 

@@ -36,6 +36,7 @@ const Terrain = (() => {
 
   const THEMES = [
     { // 0 夜间海港
+      grip: 1,
       grass: '#2c3a26', grassDark: '#1e2a1a', grassLight: '#3a4a30',
       dirt: '#4a3d2c', asphalt: '#33363c', asphaltDark: '#26282d', asphaltLight: '#41454d',
       curbA: '#b6332f', curbB: '#d9d5cc', line: '#e8e4d8',
@@ -44,6 +45,7 @@ const Terrain = (() => {
       lamp: 'rgba(255,214,150,0.55)', rim: '#c8ccd2',
     },
     { // 1 荒漠夜路
+      grip: 0.94,
       grass: '#4a3f2e', grassDark: '#3a3122', grassLight: '#5a4c38',
       dirt: '#6a583f', asphalt: '#3a3b3e', asphaltDark: '#2b2c2f', asphaltLight: '#494a4e',
       curbA: '#c07a2a', curbB: '#ddd6c4', line: '#eee6d2',
@@ -52,6 +54,7 @@ const Terrain = (() => {
       lamp: 'rgba(255,190,120,0.5)', rim: '#d8cfc0',
     },
     { // 2 雪山
+      grip: 0.52,
       grass: '#c9d4dc', grassDark: '#a8b6c2', grassLight: '#e2ebf2',
       dirt: '#8f9aa3', asphalt: '#3c4149', asphaltDark: '#2e323a', asphaltLight: '#4a5058',
       curbA: '#3b6ea8', curbB: '#f2f6fa', line: '#ffffff',
@@ -60,6 +63,7 @@ const Terrain = (() => {
       lamp: 'rgba(210,230,255,0.55)', rim: '#e8eef4',
     },
     { // 3 沙漠
+      grip: 0.86,
       grass: '#b09163', grassDark: '#9c7f54', grassLight: '#c4a878',
       dirt: '#8d7148', asphalt: '#43413c', asphaltDark: '#33312d', asphaltLight: '#53504a',
       curbA: '#c2552e', curbB: '#efe3c8', line: '#f6efd8',
@@ -68,6 +72,7 @@ const Terrain = (() => {
       lamp: 'rgba(255,200,120,0.45)', rim: '#e6d9bf',
     },
     { // 4 丛林
+      grip: 1,
       grass: '#25472a', grassDark: '#193520', grassLight: '#2f5c34',
       dirt: '#4a3a24', asphalt: '#2f3334', asphaltDark: '#23262a', asphaltLight: '#3c4142',
       curbA: '#c8a12e', curbB: '#e8e2c8', line: '#e4e2ce',
@@ -76,6 +81,7 @@ const Terrain = (() => {
       lamp: 'rgba(200,255,170,0.35)', rim: '#cfe0c4',
     },
     { // 5 集装箱码头
+      grip: 1,
       grass: '#3a3a34', grassDark: '#2c2c27', grassLight: '#4a4a42',
       dirt: '#5a5145', asphalt: '#3f4247', asphaltDark: '#303338', asphaltLight: '#4e5258',
       curbA: '#d8a021', curbB: '#d5d2c8', line: '#efeade',
@@ -84,6 +90,7 @@ const Terrain = (() => {
       lamp: 'rgba(255,230,160,0.5)', rim: '#d6dadd',
     },
     { // 6 红岩峡谷
+      grip: 0.92,
       grass: '#7a3b2a', grassDark: '#5e2c20', grassLight: '#9a4d36',
       dirt: '#8a4a2e', asphalt: '#3d3a37', asphaltDark: '#2e2c29', asphaltLight: '#4b4744',
       curbA: '#d9541f', curbB: '#f0e0c8', line: '#f6ead4',
@@ -92,6 +99,7 @@ const Terrain = (() => {
       lamp: 'rgba(255,170,90,0.5)', rim: '#e8cdb4',
     },
     { // 7 秋日林道
+      grip: 0.88,
       grass: '#4a3a1c', grassDark: '#392c14', grassLight: '#5e4a24',
       dirt: '#6a5228', asphalt: '#37373a', asphaltDark: '#29292c', asphaltLight: '#454548',
       curbA: '#c86a1e', curbB: '#e8dcbc', line: '#f4e8c8',
@@ -1050,5 +1058,11 @@ const Terrain = (() => {
     };
   }
 
-  return { build, THEMES };
+  // 路面抓地力（雪地 / 沙地更低）
+  function gripOf(themeIdx) {
+    const T = THEMES[themeIdx % THEMES.length];
+    return (T && typeof T.grip === 'number') ? T.grip : 1;
+  }
+
+  return { build, THEMES, gripOf };
 })();
