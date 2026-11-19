@@ -7,8 +7,10 @@
   function resizeCanvas() {
     const vw = window.innerWidth || document.documentElement.clientWidth || 800;
     const vh = window.innerHeight || document.documentElement.clientHeight || 360;
-    const w = Math.max(320, vw | 0);
-    const h = Math.max(200, vh | 0);
+    // 渲染分辨率系数：软件渲染下降低位图尺寸能显著提升帧率，CSS 仍铺满
+    const RS = G.renderScale || 1;
+    const w = Math.max(320, Math.round((vw | 0) * RS));
+    const h = Math.max(200, Math.round((vh | 0) * RS));
     // CSS 负责铺满，这里只改位图分辨率
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w; canvas.height = h;
@@ -507,6 +509,9 @@
     if (t) { G.selectedTrack = Math.max(0, Math.min(TRACKS.length - 1, parseInt(t[1], 10))); }
     const a = /assist=(\d)/.exec(location.search);
     if (a) ASSIST_IDX = Math.max(0, Math.min(2, parseInt(a[1], 10)));
+    // 渲染分辨率系数（?rs=0.75）；手机默认 0.8，靠 CSS 拉伸铺满
+    const rs = parseFloat((/rs=([\d.]+)/.exec(location.search) || [])[1]);
+    G.renderScale = rs || 1;   // 实测软件渲染固定 30fps，降分辨率无收益，保持清晰
   })();
 
   function startRace(trackIdx, opts) {
@@ -1114,7 +1119,18 @@
   let last = performance.now();
   let fpsAcc = 0, fpsFrames = 0, fpsShown = 0;
   function frame(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
+    const rawDt = (now - last) / 1000;
+    const dt = Math.min(0.033, rawDt);
+    // ?perf=1：每 90 帧输出一次帧时间统计，用于定位卡顿
+    if (location.search.includes('perf')) {
+      G.__mx = Math.max(G.__mx || 0, rawDt);
+      G.__acc = (G.__acc || 0) + rawDt;
+      G.__n = (G.__n || 0) + 1;
+      if (G.__n >= 90) {
+        G.__perfTxt = 'avg ' + ((G.__acc / G.__n) * 1000).toFixed(1) + 'ms · max ' + (G.__mx * 1000).toFixed(0) + 'ms';
+        G.__mx = 0; G.__acc = 0; G.__n = 0;
+      }
+    }
     last = now;
     resizeCanvas();   // 每帧自愈：窗口/视口变化都能跟上
     fpsAcc += dt; fpsFrames++;
@@ -1228,19 +1244,38 @@
       if (q.life <= 0) G.particles.splice(i, 1);
     }
 
-    // HUD
+    if (location.search.includes('banners') && G.state === 'racing') {
+      G.__bt = (G.__bt || 0) + dt;
+      if (G.__bt >= 2) { G.__bt = 0; showBanner(T('lap') + ' ' + (1 + (Math.random() * 3 | 0))); }
+    }
+
+    // HUD（只在值变化时写 DOM，避免每帧重排/重绘）
     if (G.state === 'racing') {
-      document.getElementById('raceTime').textContent = fmtTime(G.raceTime);
-      document.getElementById('lapNum').textContent = Math.max(1, Math.min(p.lap, LAPS));
-      document.getElementById('spdNum').textContent = Math.round(Math.abs(p.speed) * 0.72);
-      document.getElementById('posNum').textContent = positionOf(p);
-      document.getElementById('bestLap').textContent = T('best') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--:--.--');
+      const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && el._v !== val) { el._v = val; el.textContent = val; }
+      };
+      G.hudT = (G.hudT || 0) + dt;
+      if (G.hudT >= 0.05) {      // 计时/速度 20Hz 刷新足够
+        G.hudT = 0;
+        setTxt('raceTime', fmtTime(G.raceTime));
+        setTxt('spdNum', String(Math.round(Math.abs(p.speed) * 0.72)));
+        setTxt('posNum', String(positionOf(p)));
+        setTxt('bestLap', T('best') + ' ' + (p.bestLap ? fmtTime(p.bestLap) : '--:--.--'));
+      }
+      setTxt('lapNum', String(Math.max(1, Math.min(p.lap, LAPS))));
       const f = document.getElementById('fps');
-      if (f) f.textContent = fpsShown + ' FPS';
+      const ftxt = fpsShown + ' FPS' + (G.__perfTxt ? ' · ' + G.__perfTxt : '');
+      if (f && f._v !== ftxt) { f._v = ftxt; f.textContent = ftxt; }
       const hf = document.getElementById('healthFill');
-      hf.style.width = clamp(p.health, 0, 100) + '%';
-      hf.style.background = p.health > 55 ? 'linear-gradient(90deg,#28e07a,#8ef03a)'
-        : p.health > 25 ? 'linear-gradient(90deg,#e0c528,#f0a13a)' : 'linear-gradient(90deg,#e02828,#f06a3a)';
+      const hp = clamp(p.health, 0, 100);
+      if (hf && hf._hp !== hp) {
+        hf._hp = hp;
+        hf.style.width = hp + '%';
+        const col = hp > 55 ? 'linear-gradient(90deg,#28e07a,#8ef03a)'
+          : hp > 25 ? 'linear-gradient(90deg,#e0c528,#f0a13a)' : 'linear-gradient(90deg,#e02828,#f06a3a)';
+        if (hf._col !== col) { hf._col = col; hf.style.background = col; }
+      }
       if (p.lap !== G.lastLapShown && p.lap <= LAPS) {
         G.lastLapShown = p.lap;
         showBanner(T('lap') + ' ' + p.lap);
@@ -1837,14 +1872,33 @@
     weaponBox.addEventListener('touchstart', (e) => { e.preventDefault(); audioInit(); playerFire(); }, { passive: false });
   }
 
+  // 通用确认框
+  let confirmCb = null;
+  function askConfirm(msg, yesLabel, cb) {
+    const box = document.getElementById('confirm');
+    const text = document.getElementById('confirmMsg');
+    const yes = document.getElementById('confirmYes');
+    if (!box) { if (cb) cb(); return; }
+    if (text) text.textContent = msg;
+    if (yes && yesLabel) yes.textContent = yesLabel;
+    confirmCb = cb || null;
+    box.classList.remove('hidden');
+  }
+  function closeConfirm() {
+    const box = document.getElementById('confirm');
+    if (box) box.classList.add('hidden');
+    confirmCb = null;
+  }
+
   function exitGame() {
     if (SND) SND.uiClick();
-    try {
-      if (window.AndroidHost && window.AndroidHost.exitApp) { window.AndroidHost.exitApp(); return; }
-    } catch (e) {}
-    // 浏览器兜底
-    try { window.close(); } catch (e) {}
-    toast('网页版请直接关闭标签页');
+    askConfirm(T('exitConfirm'), T('exitApp'), () => {
+      try {
+        if (window.AndroidHost && window.AndroidHost.exitApp) { window.AndroidHost.exitApp(); return; }
+      } catch (e) {}
+      try { window.close(); } catch (e) {}
+      toast('网页版请直接关闭标签页');
+    });
   }
   // 手感档位：暂停面板可循环切换（0 硬核 / 1 标准 / 2 轻松）
   function assistLabel() { return '手感：' + ASSIST[ASSIST_IDX].name; }
@@ -1869,6 +1923,13 @@
   if (exitHome) exitHome.onclick = exitGame;
   const exitBtn = document.getElementById('exitBtn');
   if (exitBtn) exitBtn.onclick = exitGame;
+  const confirmYes = document.getElementById('confirmYes');
+  if (confirmYes) confirmYes.onclick = () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); };
+  const confirmNo = document.getElementById('confirmNo');
+  if (confirmNo) confirmNo.onclick = () => { if (SND) SND.uiClick(); closeConfirm(); };
+  const confirmBox = document.getElementById('confirm');
+  if (confirmBox) confirmBox.onclick = (e) => { if (e.target === confirmBox) closeConfirm(); };
+  if (location.search.includes('showconfirm')) setTimeout(() => exitGame(), 300);
 
   const pauseBtn = document.getElementById('pauseBtn');
   if (pauseBtn) pauseBtn.onclick = () => {
