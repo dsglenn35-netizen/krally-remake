@@ -1502,6 +1502,56 @@
     $('uiRecord').textContent = Meta.data.wins + T('wins') + ' / ' + Meta.data.races + T('races');
   }
 
+  // 首页背景：赛道弧线 + 玩家车（一次性绘制，不参与每帧）
+  function drawMenuBg() {
+    const cv = document.getElementById('menuBg');
+    if (!cv || !cv.clientWidth) return;
+    const w = cv.clientWidth | 0, h = cv.clientHeight | 0;
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, w, h);
+
+    const bg = g.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, '#0a1420'); bg.addColorStop(0.55, '#0a1018'); bg.addColorStop(1, '#05070b');
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+
+    const glow = g.createRadialGradient(w * 0.72, h * 0.42, 10, w * 0.72, h * 0.42, w * 0.5);
+    glow.addColorStop(0, 'rgba(40,150,220,.22)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = glow; g.fillRect(0, 0, w, h);
+
+    // 赛道弧线
+    g.save();
+    g.lineCap = 'round';
+    const road = (lw, style) => {
+      g.beginPath();
+      g.moveTo(w * 0.28, h * 1.28);
+      g.quadraticCurveTo(w * 0.60, h * 0.12, w * 1.22, h * 0.34);
+      g.lineWidth = lw; g.strokeStyle = style; g.stroke();
+    };
+    road(h * 0.52, '#1b1f25');
+    road(h * 0.50, '#31363d');
+    road(h * 0.008, 'rgba(215,225,235,.5)');
+    g.setLineDash([h * 0.05, h * 0.04]);
+    road(h * 0.010, 'rgba(240,240,230,.32)');
+    g.setLineDash([]);
+    g.restore();
+
+    const drv = DRIVERS[Meta.driverIdx] || DRIVERS[0];
+    const cs = Math.max(2.0, h / 200);
+    Art.setSuperSample(4);
+    const cg = g.createRadialGradient(w * 0.70, h * 0.60, 4, w * 0.70, h * 0.60, h * 0.36);
+    cg.addColorStop(0, 'rgba(90,200,255,.26)');
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = cg; g.fillRect(0, 0, w, h);
+    Art.car(g, w * 0.70, h * 0.58, -Math.PI / 2 + 0.42, drv, { scale: cs });
+
+    const vg = g.createRadialGradient(w * 0.55, h * 0.5, h * 0.25, w * 0.55, h * 0.5, w * 0.85);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,.76)');
+    g.fillStyle = vg; g.fillRect(0, 0, w, h);
+  }
+
   function showView(name) {
     ['home', 'quick', 'career', 'garage', 'shop', 'drivers', 'editor'].forEach(v => {
       const el = $('view-' + v);
@@ -1509,7 +1559,14 @@
     });
     G.view = name;
     refreshTopbar();
+    if (name === 'home') {
+      renderHome();
+      drawMenuBg();
+      const first = document.querySelector('.menu-item');
+      if (first) first.classList.add('sel');
+    }
   }
+  addEventListener('resize', () => { if (G.view === 'home') drawMenuBg(); });
 
   function renderHome() {
     const st = Meta.champState('rookie');

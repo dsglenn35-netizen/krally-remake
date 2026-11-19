@@ -19,36 +19,39 @@
       <button id="langBtn" class="langbtn">中 / EN</button>
     </div>
 
-    <!-- 首页 -->
-    <div class="view" id="view-home">
-      <div class="title">
-        <h1>K<span>-</span>RALLY</h1>
-        <p class="sub" data-i18n="subtitle">重制版 · 生涯原型</p>
+    <!-- 首页（标题画面）-->
+    <div class="view home" id="view-home">
+      <canvas id="menuBg"></canvas>
+      <div class="home-scrim"></div>
+      <div class="home-inner">
+        <div class="home-left">
+          <div class="logo">
+            <h1>K<span>-</span>RALLY</h1>
+            <p class="sub" data-i18n="subtitle">重制版 · 生涯原型</p>
+          </div>
+          <ul class="menu">
+            <li class="menu-item" id="navCareer">
+              <b data-i18n="career">生涯</b><span>CAREER</span><i id="careerHint">从 ROOKIE CUP 开始</i>
+            </li>
+            <li class="menu-item" id="navQuick">
+              <b data-i18n="quick">快速比赛</b><span>QUICK RACE</span><i data-i18n="quickDesc">随便跑一场，拿少量奖金</i>
+            </li>
+            <li class="menu-item" id="navGarage">
+              <b data-i18n="garage">车库</b><span>GARAGE</span><i id="garageHint">查看与升级你的车</i>
+            </li>
+            <li class="menu-item" id="navShop">
+              <b data-i18n="shop">商店</b><span>SHOP</span><i data-i18n="shopDesc">买车 / 买升级</i>
+            </li>
+            <li class="menu-item" id="navEditor">
+              <b>赛道编辑器</b><span>TRACK EDITOR</span><i>自己画赛道，保存后可直接试跑</i>
+            </li>
+          </ul>
+          <div class="home-foot">
+            <span id="currentCarInfo"></span>
+            <button id="exitHome" class="exit-link" data-i18n="exitApp">退出游戏</button>
+          </div>
+        </div>
       </div>
-      <div class="cards">
-        <div class="card" id="navCareer">
-          <h3 data-i18n="career">生涯</h3>
-          <p id="careerHint">从 ROOKIE CUP 开始</p>
-        </div>
-        <div class="card" id="navQuick">
-          <h3 data-i18n="quick">快速比赛</h3>
-          <p data-i18n="quickDesc">随便跑一场，拿少量奖金</p>
-        </div>
-        <div class="card" id="navGarage">
-          <h3 data-i18n="garage">车库</h3>
-          <p id="garageHint">查看与升级你的车</p>
-        </div>
-        <div class="card" id="navEditor">
-          <h3>赛道编辑器</h3>
-          <p>自己画赛道，保存后可直接试跑</p>
-        </div>
-        <div class="card" id="navShop">
-          <h3 data-i18n="shop">商店</h3>
-          <p data-i18n="shopDesc">买车 / 买升级</p>
-        </div>
-      </div>
-      <div class="currentcar" id="currentCarInfo"></div>
-      <button id="exitHome" class="exit-link" data-i18n="exitApp">退出游戏</button>
     </div>
 
     <!-- 车手选择（原作风格：头像 + 排名） -->

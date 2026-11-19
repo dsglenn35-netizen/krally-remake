@@ -65,7 +65,7 @@ button:active { transform:translateY(1px); }
 @media (pointer: coarse){ .touch{ display:flex !important; } }
 @media (max-width: 900px){ .title h1{font-size:44px} .panel{min-width:170px} .bio{font-size:12px} }
 /* ---- 顶层导航与页面 ---- */
-.topbar { position:absolute; top:14px; left:0; right:0; display:flex; justify-content:center; gap:26px;
+.topbar { position:absolute; z-index:30; top:14px; left:0; right:0; display:flex; justify-content:center; gap:26px;
   font-size:14px; letter-spacing:2px; color:#9fd8f5; }
 .topbar .cash { color:#7dffb0; text-shadow:0 0 12px rgba(60,255,150,.4); }
 .topbar .lvl { color:#ffd479; }
@@ -318,3 +318,33 @@ html, body, #app, .overlay, #hud, #touch {
   box-shadow:0 0 60px rgba(0,180,255,.18); }
 .confirm-card h1 { font-size:22px; letter-spacing:5px; color:#eaf6ff; font-weight:700; }
 .confirm-card p { color:#9fc2d8; font-size:15px; letter-spacing:1px; }
+/* ---------- 首页标题画面 ---------- */
+.view.home { position:absolute; inset:0; width:100vw; height:100vh; max-width:none; padding:0; display:block; }
+#menuBg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.home-scrim { position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg, rgba(3,6,11,.95) 0%, rgba(3,6,11,.86) 34%,
+             rgba(3,6,11,.15) 62%, rgba(3,6,11,.55) 100%); }
+.home-inner { position:relative; height:100%; display:flex; align-items:center; }
+.home-left { padding:2vh 3.4vw; display:flex; flex-direction:column; gap:1.6vh; width:min(56%, 560px); }
+.logo h1 { font-size:clamp(30px, 5.4vw, 62px); letter-spacing:9px; color:#eaf6ff; font-weight:800; font-style:italic;
+  text-shadow:0 0 22px #25d0ff, 0 0 60px rgba(0,140,255,.55); line-height:1; }
+.logo h1 span { color:#ff2f8e; text-shadow:0 0 20px #ff2f8e; }
+.logo .sub { margin-top:6px; font-size:11px; letter-spacing:6px; color:#5d7f9a; }
+.menu { list-style:none; display:flex; flex-direction:column; gap:1px; margin-top:.6vh; }
+.menu-item { position:relative; padding:7px 14px 7px 16px; border-left:3px solid transparent; cursor:pointer;
+  display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:10px; transition:background .12s; }
+.menu-item b { font-size:clamp(14px, 2.1vw, 19px); letter-spacing:4px; color:#d7ecfa; font-weight:700; }
+.menu-item span { font-size:9px; letter-spacing:4px; color:#4f7488; }
+.menu-item i { grid-column:1 / -1; font-style:normal; font-size:11px; color:#7fa8c0;
+  max-height:0; opacity:0; overflow:hidden; transition:max-height .16s, opacity .16s, margin .16s; }
+.menu-item:hover, .menu-item.sel { background:linear-gradient(90deg, rgba(0,180,255,.22), rgba(0,180,255,0) 85%);
+  border-left-color:#3ad7ff; }
+.menu-item:hover b, .menu-item.sel b { color:#fff; text-shadow:0 0 14px rgba(60,220,255,.7); }
+.menu-item:hover i, .menu-item.sel i { max-height:20px; opacity:1; margin-top:2px; }
+.home-foot { display:flex; align-items:center; gap:16px; margin-top:.4vh; font-size:11px; color:#6d93ab; letter-spacing:1px; }
+.home-foot .exit-link { margin-top:0; font-size:11px; padding:5px 14px; }
+@media (max-height: 420px){
+  .home-left { gap:.9vh; padding:1.2vh 3vw; }
+  .menu-item { padding:5px 12px 5px 14px; }
+  .menu { gap:0; }
+}
