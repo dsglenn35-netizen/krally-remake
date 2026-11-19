@@ -62,7 +62,7 @@ button:active { transform:translateY(1px); }
 .touch button { width:74px; height:74px; border-radius:50%; font-size:14px; letter-spacing:1px; padding:0;
   background:rgba(12,24,40,.55); color:#9fe8ff; border:1px solid rgba(90,200,255,.45); box-shadow:none; }
 .touch button:active { background:rgba(40,140,220,.6); }
-@media (pointer: coarse){ .touch{ display:flex !important; } }
+@media (pointer: coarse){ .touch:not(.hidden){ display:flex !important; } }
 @media (max-width: 900px){ .title h1{font-size:44px} .panel{min-width:170px} .bio{font-size:12px} }
 /* ---- 顶层导航与页面 ---- */
 .topbar { position:absolute; z-index:30; top:14px; left:0; right:0; display:flex; justify-content:center; gap:26px;

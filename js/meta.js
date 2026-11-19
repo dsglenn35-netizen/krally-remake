@@ -256,7 +256,7 @@ const Meta = (() => {
   }
 
   return {
-    CARS, UPGRADES, CHAMPS, load, save, reset,
+    CARS, UPGRADES, CHAMPS, load, save, reset, get,
     get data() { return data; },
     get driverIdx() { return root.driverIdx; },
     stats, level, get car() { return get(data.currentCar); },

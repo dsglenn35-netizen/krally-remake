@@ -1987,6 +1987,28 @@
   const confirmBox = document.getElementById('confirm');
   if (confirmBox) confirmBox.onclick = (e) => { if (e.target === confirmBox) closeConfirm(); };
   if (location.search.includes('showconfirm')) setTimeout(() => exitGame(), 300);
+  // ?smoke=1：依次打开每个界面，把异常写进标题（无头环境自检）
+  if (location.search.includes('smoke')) {
+    const errs = [];
+    addEventListener('error', (e) => errs.push(e.message));
+    const views = [
+      ['home', () => { }],
+      ['career', () => renderCareer()],
+      ['quick', () => buildQuickLists()],
+      ['garage', () => renderGarage()],
+      ['shop', () => renderShop()],
+      ['drivers', () => { if (typeof renderDrivers === 'function') renderDrivers(); }],
+      ['editor', () => { if (typeof Editor !== 'undefined' && Editor.open) Editor.open(); }],
+    ];
+    let i = 0;
+    const tick = () => {
+      if (i >= views.length) { document.title = errs.length ? ('SMOKE ERR: ' + errs.join(' | ')) : 'SMOKE OK'; return; }
+      const v = views[i++];
+      try { v[1](); showView(v[0]); } catch (e) { errs.push(v[0] + ':' + e.message); }
+      setTimeout(tick, 250);
+    };
+    setTimeout(tick, 400);
+  }
 
   const pauseBtn = document.getElementById('pauseBtn');
   if (pauseBtn) pauseBtn.onclick = () => {
