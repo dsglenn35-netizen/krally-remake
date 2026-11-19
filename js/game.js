@@ -212,8 +212,9 @@
 
       // 自动回正（仅轻松档、仅玩家）：松开方向时车头缓慢对齐前方赛道
       if (AS.center > 0 && this.isPlayer && Math.abs(steerInput) < 0.05 && this.speed > 60) {
-        const look = track.at(this.s + 70 + this.speed * 0.22);
-        const want = Math.atan2(look.ty, look.tx);
+        // 瞄准赛道中线前方一点（而不是只对齐切线），这样才会从边上回到中间
+        const look = track.at(this.s + 105 + this.speed * 0.30);
+        const want = Math.atan2(look.y - this.y, look.x - this.x);
         const diff = wrapAngle(want - this.angle);
         const k = AS.center * Math.min(1, this.speed / 180);
         this.angle += diff * Math.min(1, k * dt);
@@ -493,7 +494,7 @@
   const ASSIST = [
     { name: '硬核', steer: 1.00, speedFloor: 0.35, conv: 1.00, snow: 1.00, brake: 1.00, center: 0.00 },
     { name: '标准', steer: 1.12, speedFloor: 0.45, conv: 1.18, snow: 0.86, brake: 1.10, center: 0.00 },
-    { name: '轻松', steer: 1.28, speedFloor: 0.55, conv: 1.40, snow: 0.72, brake: 1.22, center: 1.80 },
+    { name: '轻松', steer: 1.28, speedFloor: 0.55, conv: 1.40, snow: 0.72, brake: 1.22, center: 1.60 },
   ];
   let ASSIST_IDX = 1;
 
@@ -1373,7 +1374,7 @@
     const sorted = [...G.cars].sort((a, b) => a.y - b.y);
     for (const c of sorted) {
       Art.car(ctx, c.x, c.y, c.angle, c.driver,
-        { thrust: clamp(c.speed / c.maxSpeed, 0, 1), damage: 1 - c.health / 100, scale: c.isPlayer ? 1.1 : 1, braking: c.blocked > 0.5 });
+        { thrust: clamp(c.speed / c.maxSpeed, 0, 1), damage: 1 - c.health / 100, scale: 1, braking: c.blocked > 0.5 });
 
       if (!c.isPlayer) {
         ctx.fillStyle = 'rgba(210,230,250,.6)';
